@@ -10,8 +10,7 @@ AE2 Pattern Generator 是一个为 Minecraft 1.7.10 (GregTech New Horizons 2.8.4
   - 支持通过正则表达式匹配输出/输入物品的矿物辞典。
   - 支持对 NC (Nuclear Control) 物品进行特殊过滤（由 `ID:Meta` 定义）。
   - **黑名单系统**: 允许通过物品 ID 或矿辞排除特定的配方。
-- **现代化 GUI**: 模拟 AE2 1.21+ 的极简发光风格界面。
-- **数据持久化**: 所有配置均保存于样板生成器物品的 NBT 中。
+
 
 ## 🚀 安装与使用
 
