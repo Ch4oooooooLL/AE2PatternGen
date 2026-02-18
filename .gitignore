@@ -34,3 +34,8 @@ addon.local.gradle.kts
 addon.late.local.gradle
 addon.late.local.gradle.kts
 layout.json
+build_log*.txt
+log.txt
+deps_list.txt
+compile_log.txt
+build_log_diagnosis.txt

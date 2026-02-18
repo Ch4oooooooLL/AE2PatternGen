@@ -13,7 +13,11 @@ public class CommonProxy {
         NetworkHandler.init();
     }
 
-    public void init(FMLInitializationEvent event) {
-        // nothing on common side
+    public void init(FMLInitializationEvent event, Object modInstance) {
+        System.out.println(
+            "[AE2PatternGen] Registering GUI Handler for " + modInstance.getClass()
+                .getName());
+        cpw.mods.fml.common.network.NetworkRegistry.INSTANCE
+            .registerGuiHandler(modInstance, new com.github.ae2patterngen.gui.GuiHandler());
     }
 }

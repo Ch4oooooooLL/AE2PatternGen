@@ -12,7 +12,7 @@ public class GuiHandler implements IGuiHandler {
     @Override
     public Object getServerGuiElement(int id, EntityPlayer player, World world, int x, int y, int z) {
         if (id == ItemPatternGenerator.GUI_ID) {
-            return new ContainerPatternGen(player);
+            return new ContainerPatternGen(player, player.getCurrentEquippedItem());
         }
         return null;
     }
@@ -20,7 +20,7 @@ public class GuiHandler implements IGuiHandler {
     @Override
     public Object getClientGuiElement(int id, EntityPlayer player, World world, int x, int y, int z) {
         if (id == ItemPatternGenerator.GUI_ID) {
-            return new GuiPatternGen(new ContainerPatternGen(player));
+            return new GuiPatternGen(new ContainerPatternGen(player, player.getCurrentEquippedItem()));
         }
         return null;
     }

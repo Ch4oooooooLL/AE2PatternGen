@@ -9,9 +9,6 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.IIcon;
 import net.minecraft.world.World;
 
-import com.github.ae2patterngen.AE2PatternGen;
-
-import cpw.mods.fml.common.network.internal.FMLNetworkHandler;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
@@ -23,13 +20,15 @@ import cpw.mods.fml.relauncher.SideOnly;
  */
 public class ItemPatternGenerator extends Item {
 
-    public static final int GUI_ID = 0;
+    public static final int GUI_ID = 101;
 
     // NBT 键名
     public static final String NBT_RECIPE_MAP = "recipeMap";
     public static final String NBT_OUTPUT_ORE = "outputOre";
     public static final String NBT_INPUT_ORE = "inputOre";
     public static final String NBT_NC_ITEM = "ncItem";
+    public static final String NBT_BLACKLIST_INPUT = "blacklistInput";
+    public static final String NBT_BLACKLIST_OUTPUT = "blacklistOutput";
 
     @SideOnly(Side.CLIENT)
     private IIcon blankPatternIcon;
@@ -44,7 +43,7 @@ public class ItemPatternGenerator extends Item {
     @Override
     @SideOnly(Side.CLIENT)
     public void registerIcons(IIconRegister register) {
-        // 使用 AE2 的空白样板材质
+        // 使用 AE2 的已编码样板材质 (作为生成器图标)
         blankPatternIcon = register.registerIcon("appliedenergistics2:ItemEncodedPattern");
     }
 
@@ -57,9 +56,9 @@ public class ItemPatternGenerator extends Item {
     @Override
     public ItemStack onItemRightClick(ItemStack stack, World world, EntityPlayer player) {
         if (!world.isRemote) {
-            FMLNetworkHandler.openGui(
+            cpw.mods.fml.common.network.internal.FMLNetworkHandler.openGui(
                 player,
-                AE2PatternGen.instance,
+                com.github.ae2patterngen.AE2PatternGen.instance,
                 GUI_ID,
                 world,
                 (int) player.posX,
@@ -96,10 +95,12 @@ public class ItemPatternGenerator extends Item {
      * 批量保存所有配置字段
      */
     public static void saveAllFields(ItemStack stack, String recipeMap, String outputOre, String inputOre,
-        String ncItem) {
+        String ncItem, String blacklistInput, String blacklistOutput) {
         saveField(stack, NBT_RECIPE_MAP, recipeMap);
         saveField(stack, NBT_OUTPUT_ORE, outputOre);
         saveField(stack, NBT_INPUT_ORE, inputOre);
         saveField(stack, NBT_NC_ITEM, ncItem);
+        saveField(stack, NBT_BLACKLIST_INPUT, blacklistInput);
+        saveField(stack, NBT_BLACKLIST_OUTPUT, blacklistOutput);
     }
 }

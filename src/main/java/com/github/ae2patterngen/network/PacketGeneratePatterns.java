@@ -9,6 +9,7 @@ import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.EnumChatFormatting;
 
 import com.github.ae2patterngen.encoder.PatternEncoder;
+import com.github.ae2patterngen.filter.BlacklistFilter;
 import com.github.ae2patterngen.filter.CompositeFilter;
 import com.github.ae2patterngen.filter.InputOreDictFilter;
 import com.github.ae2patterngen.filter.NCItemFilter;
@@ -31,14 +32,19 @@ public class PacketGeneratePatterns implements IMessage {
     private String outputOreDict;
     private String inputOreDict;
     private String ncItem;
+    private String blacklistInput;
+    private String blacklistOutput;
 
     public PacketGeneratePatterns() {}
 
-    public PacketGeneratePatterns(String recipeMapId, String outputOreDict, String inputOreDict, String ncItem) {
+    public PacketGeneratePatterns(String recipeMapId, String outputOreDict, String inputOreDict, String ncItem,
+        String blacklistInput, String blacklistOutput) {
         this.recipeMapId = recipeMapId;
         this.outputOreDict = outputOreDict;
         this.inputOreDict = inputOreDict;
         this.ncItem = ncItem;
+        this.blacklistInput = blacklistInput;
+        this.blacklistOutput = blacklistOutput;
     }
 
     @Override
@@ -47,6 +53,8 @@ public class PacketGeneratePatterns implements IMessage {
         outputOreDict = ByteBufUtils.readUTF8String(buf);
         inputOreDict = ByteBufUtils.readUTF8String(buf);
         ncItem = ByteBufUtils.readUTF8String(buf);
+        blacklistInput = ByteBufUtils.readUTF8String(buf);
+        blacklistOutput = ByteBufUtils.readUTF8String(buf);
     }
 
     @Override
@@ -55,6 +63,8 @@ public class PacketGeneratePatterns implements IMessage {
         ByteBufUtils.writeUTF8String(buf, outputOreDict != null ? outputOreDict : "");
         ByteBufUtils.writeUTF8String(buf, inputOreDict != null ? inputOreDict : "");
         ByteBufUtils.writeUTF8String(buf, ncItem != null ? ncItem : "");
+        ByteBufUtils.writeUTF8String(buf, blacklistInput != null ? blacklistInput : "");
+        ByteBufUtils.writeUTF8String(buf, blacklistOutput != null ? blacklistOutput : "");
     }
 
     public static class Handler implements IMessageHandler<PacketGeneratePatterns, IMessage> {
@@ -63,31 +73,62 @@ public class PacketGeneratePatterns implements IMessage {
         public IMessage onMessage(PacketGeneratePatterns message, MessageContext ctx) {
             EntityPlayerMP player = ctx.getServerHandler().playerEntity;
 
-            // 收集配方
-            List<RecipeEntry> recipes = GTRecipeSource.collectRecipes(message.recipeMapId);
+            // 1. 查找匹配的配方表
+            List<String> matchedMaps = GTRecipeSource.findMatchingRecipeMaps(message.recipeMapId);
+            if (matchedMaps.isEmpty()) {
+                player.addChatMessage(
+                    new ChatComponentText(
+                        EnumChatFormatting.RED + "[AE2PatternGen] 未找到匹配的配方表: " + message.recipeMapId));
+                return null;
+            }
 
-            // 构建过滤器
+            player.addChatMessage(
+                new ChatComponentText(
+                    EnumChatFormatting.GRAY + "[AE2PatternGen] 匹配到配方表: " + String.join(", ", matchedMaps)));
+
+            // 2. 收集原始配方
+            List<RecipeEntry> recipes = GTRecipeSource.collectRecipes(message.recipeMapId);
+            int totalBeforeFilter = recipes.size();
+
+            // 3. 构建过滤器
             CompositeFilter filter = new CompositeFilter();
-            if (message.outputOreDict != null && !message.outputOreDict.isEmpty()) {
+            if (message.outputOreDict != null && !message.outputOreDict.isEmpty()
+                && !message.outputOreDict.equals("*")) {
                 filter.addFilter(new OutputOreDictFilter(message.outputOreDict));
             }
-            if (message.inputOreDict != null && !message.inputOreDict.isEmpty()) {
+            if (message.inputOreDict != null && !message.inputOreDict.isEmpty() && !message.inputOreDict.equals("*")) {
                 filter.addFilter(new InputOreDictFilter(message.inputOreDict));
             }
-            if (message.ncItem != null && !message.ncItem.isEmpty()) {
+            if (message.ncItem != null && !message.ncItem.isEmpty() && !message.ncItem.equals("*")) {
                 filter.addFilter(new NCItemFilter(message.ncItem));
             }
+            if (message.blacklistInput != null && !message.blacklistInput.isEmpty()
+                && !message.blacklistInput.equals("*")) {
+                filter.addFilter(new BlacklistFilter(message.blacklistInput, true, false));
+            }
+            if (message.blacklistOutput != null && !message.blacklistOutput.isEmpty()
+                && !message.blacklistOutput.equals("*")) {
+                filter.addFilter(new BlacklistFilter(message.blacklistOutput, false, true));
+            }
 
-            // 应用过滤
-            java.util.List<RecipeEntry> filtered = new java.util.ArrayList<>();
+            // 4. 应用过滤
+            List<RecipeEntry> filtered = new java.util.ArrayList<>();
             for (RecipeEntry recipe : recipes) {
                 if (filter.matches(recipe)) {
                     filtered.add(recipe);
                 }
             }
 
+            player.addChatMessage(
+                new ChatComponentText(
+                    EnumChatFormatting.GRAY + "[AE2PatternGen] 原始配方: "
+                        + totalBeforeFilter
+                        + ", 过滤后: "
+                        + filtered.size()));
+
             if (filtered.isEmpty()) {
-                player.addChatMessage(new ChatComponentText(EnumChatFormatting.YELLOW + "[AE2PatternGen] 没有找到匹配的配方"));
+                player.addChatMessage(
+                    new ChatComponentText(EnumChatFormatting.YELLOW + "[AE2PatternGen] 没有找到匹配的配方 (请检查正则/矿辞)"));
                 return null;
             }
 

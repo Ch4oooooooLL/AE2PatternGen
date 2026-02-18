@@ -12,6 +12,7 @@ import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.EnumChatFormatting;
 
 import com.github.ae2patterngen.encoder.PatternEncoder;
+import com.github.ae2patterngen.filter.BlacklistFilter;
 import com.github.ae2patterngen.filter.CompositeFilter;
 import com.github.ae2patterngen.filter.InputOreDictFilter;
 import com.github.ae2patterngen.filter.NCItemFilter;
@@ -25,10 +26,10 @@ import com.github.ae2patterngen.recipe.RecipeEntry;
  * 用法:
  * <ul>
  * <li>/patterngen list - 列出所有可用配方表</li>
- * <li>/patterngen generate &lt;recipeMapId&gt; [outputOreDict] [inputOreDict]
- * [ncItem] - 生成样板</li>
+ * <li>/patterngen rotate &lt;recipeMapId&gt; [outputOreDict] [inputOreDict]
+ * [ncItem] [blacklistInput] [blacklistOutput] - 生成样板</li>
  * <li>/patterngen count &lt;recipeMapId&gt; [outputOreDict] [inputOreDict]
- * [ncItem] - 预览匹配数量</li>
+ * [ncItem] [blacklistInput] [blacklistOutput] - 预览匹配数量</li>
  * </ul>
  */
 public class CommandPatternGen extends CommandBase {
@@ -40,7 +41,7 @@ public class CommandPatternGen extends CommandBase {
 
     @Override
     public String getCommandUsage(ICommandSender sender) {
-        return "/patterngen <list|generate|count> [recipeMapId] [outputOreDict] [inputOreDict] [ncItem]";
+        return "/patterngen <list|generate|count> [recipeMapId] [outputOreDict] [inputOreDict] [ncItem] [blacklistInput] [blacklistOutput]";
     }
 
     @Override
@@ -80,12 +81,12 @@ public class CommandPatternGen extends CommandBase {
                 EnumChatFormatting.YELLOW + "/patterngen list" + EnumChatFormatting.WHITE + " - 列出所有配方表"));
         sender.addChatMessage(
             new ChatComponentText(
-                EnumChatFormatting.YELLOW + "/patterngen count <配方表ID> [输出矿辞] [输入矿辞] [NC物品]"
+                EnumChatFormatting.YELLOW + "/patterngen count <配方表ID> [输出矿辞] [输入矿辞] [NC物品] [输入黑名单] [输出黑名单]"
                     + EnumChatFormatting.WHITE
                     + " - 预览匹配数量"));
         sender.addChatMessage(
             new ChatComponentText(
-                EnumChatFormatting.YELLOW + "/patterngen generate <配方表ID> [输出矿辞] [输入矿辞] [NC物品]"
+                EnumChatFormatting.YELLOW + "/patterngen generate <配方表ID> [输出矿辞] [输入矿辞] [NC物品] [输入黑名单] [输出黑名单]"
                     + EnumChatFormatting.WHITE
                     + " - 生成样板"));
     }
@@ -120,7 +121,7 @@ public class CommandPatternGen extends CommandBase {
         }
 
         EntityPlayerMP player = (EntityPlayerMP) sender;
-        List<RecipeEntry> filtered = collectAndFilter(args);
+        List<RecipeEntry> filtered = collectAndFilter(sender, args);
 
         if (filtered.isEmpty()) {
             sender.addChatMessage(new ChatComponentText(EnumChatFormatting.YELLOW + "没有找到匹配的配方"));
@@ -161,39 +162,58 @@ public class CommandPatternGen extends CommandBase {
             return;
         }
 
-        List<RecipeEntry> filtered = collectAndFilter(args);
+        List<RecipeEntry> filtered = collectAndFilter(sender, args);
 
         sender.addChatMessage(new ChatComponentText(EnumChatFormatting.GREEN + "匹配到 " + filtered.size() + " 个配方"));
     }
 
-    private List<RecipeEntry> collectAndFilter(String[] args) {
-        String recipeMapId = args[1];
+    private List<RecipeEntry> collectAndFilter(ICommandSender sender, String[] args) {
+        String recipeMapIdInput = args[1];
         String outputOreDict = args.length > 2 ? args[2] : null;
         String inputOreDict = args.length > 3 ? args[3] : null;
         String ncItem = args.length > 4 ? args[4] : null;
 
-        // 收集配方
-        List<RecipeEntry> recipes = GTRecipeSource.collectRecipes(recipeMapId);
+        // 1. 查找配方表
+        List<String> matchedMaps = GTRecipeSource.findMatchingRecipeMaps(recipeMapIdInput);
+        if (matchedMaps.isEmpty()) {
+            sender.addChatMessage(new ChatComponentText(EnumChatFormatting.RED + "未找到匹配的配方表: " + recipeMapIdInput));
+            return new java.util.ArrayList<>();
+        }
+        sender.addChatMessage(
+            new ChatComponentText(EnumChatFormatting.GRAY + "匹配到配方表: " + String.join(", ", matchedMaps)));
 
-        // 构建过滤器
+        // 2. 收集配方
+        List<RecipeEntry> recipes = GTRecipeSource.collectRecipes(recipeMapIdInput);
+        int totalBefore = recipes.size();
+
+        // 3. 构建过滤器
         CompositeFilter filter = new CompositeFilter();
-        if (outputOreDict != null && !outputOreDict.isEmpty()) {
+        if (outputOreDict != null && !outputOreDict.isEmpty() && !outputOreDict.equals("*")) {
             filter.addFilter(new OutputOreDictFilter(outputOreDict));
         }
-        if (inputOreDict != null && !inputOreDict.isEmpty()) {
+        if (inputOreDict != null && !inputOreDict.isEmpty() && !inputOreDict.equals("*")) {
             filter.addFilter(new InputOreDictFilter(inputOreDict));
         }
-        if (ncItem != null && !ncItem.isEmpty()) {
+        if (ncItem != null && !ncItem.isEmpty() && !ncItem.equals("*")) {
             filter.addFilter(new NCItemFilter(ncItem));
         }
+        if (args.length > 5 && !args[5].isEmpty() && !args[5].equals("*")) {
+            filter.addFilter(new BlacklistFilter(args[5], true, false));
+        }
+        if (args.length > 6 && !args[6].isEmpty() && !args[6].equals("*")) {
+            filter.addFilter(new BlacklistFilter(args[6], false, true));
+        }
 
-        // 应用过滤
+        // 4. 应用过滤
         List<RecipeEntry> filtered = new java.util.ArrayList<>();
         for (RecipeEntry recipe : recipes) {
             if (filter.matches(recipe)) {
                 filtered.add(recipe);
             }
         }
+
+        sender.addChatMessage(
+            new ChatComponentText(EnumChatFormatting.GRAY + "原始配方: " + totalBefore + ", 过滤后: " + filtered.size()));
 
         return filtered;
     }

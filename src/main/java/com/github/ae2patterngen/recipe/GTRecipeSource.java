@@ -52,7 +52,7 @@ public class GTRecipeSource {
             return matches;
         }
 
-        // 2. 不区分大小写的子串匹配
+        // 2. 不区分大小写的子串匹配 (匹配 ID 即可)
         for (String mapId : RecipeMap.ALL_RECIPE_MAPS.keySet()) {
             if (mapId.toLowerCase()
                 .contains(lowerKeyword)) {
@@ -71,6 +71,7 @@ public class GTRecipeSource {
      */
     public static List<RecipeEntry> collectRecipes(String keyword) {
         List<RecipeEntry> entries = new ArrayList<>();
+        java.util.Set<String> processedKeys = new java.util.HashSet<>();
 
         List<String> matchedMaps = findMatchingRecipeMaps(keyword);
         if (matchedMaps.isEmpty()) {
@@ -87,8 +88,17 @@ public class GTRecipeSource {
             for (GTRecipe recipe : recipes) {
                 if (recipe == null || !recipe.mEnabled) continue;
 
+                // 生成配方唯一性 Key (基于输入、输出、时长、EU)
+                String recipeKey = generateRecipeKey(recipe);
+                if (!processedKeys.add(recipeKey)) continue;
+
                 ItemStack[] normalInputs = recipe.mInputs;
                 ItemStack[] specialItems = new ItemStack[0];
+                if (recipe.mSpecialItems instanceof ItemStack[]) {
+                    specialItems = (ItemStack[]) recipe.mSpecialItems;
+                } else if (recipe.mSpecialItems instanceof ItemStack) {
+                    specialItems = new ItemStack[] { (ItemStack) recipe.mSpecialItems };
+                }
 
                 RecipeEntry entry = new RecipeEntry(
                     "gt",
@@ -107,6 +117,36 @@ public class GTRecipeSource {
         }
 
         return entries;
+    }
+
+    private static String generateRecipeKey(GTRecipe recipe) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(recipe.mDuration)
+            .append(":")
+            .append(recipe.mEUt)
+            .append("|");
+        if (recipe.mInputs != null) {
+            for (ItemStack is : recipe.mInputs) {
+                if (is != null) sb.append(
+                    is.getItem()
+                        .getUnlocalizedName())
+                    .append("@")
+                    .append(is.stackSize)
+                    .append(",");
+            }
+        }
+        sb.append("|");
+        if (recipe.mOutputs != null) {
+            for (ItemStack is : recipe.mOutputs) {
+                if (is != null) sb.append(
+                    is.getItem()
+                        .getUnlocalizedName())
+                    .append("@")
+                    .append(is.stackSize)
+                    .append(",");
+            }
+        }
+        return sb.toString();
     }
 
     /**

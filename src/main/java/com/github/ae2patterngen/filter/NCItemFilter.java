@@ -9,48 +9,38 @@ import net.minecraft.item.ItemStack;
 import com.github.ae2patterngen.recipe.RecipeEntry;
 
 /**
- * 按 NC（不消耗）物品 ID 过滤
- * 匹配 specialItems 或 mInputs 中 stackSize == 0 的物品
+ * 按 NC（不消耗）物品过滤
+ * <p>
+ * 规则更新: 使用 "ID:Meta" 格式 (如 "7511:1" 或 "7511")
+ * 匹配 specialItems 或 inputs 中 stackSize == 0 的物品
  */
 public class NCItemFilter implements IRecipeFilter {
 
-    private final String regexPattern;
-    private final Pattern compiledPattern;
+    private final String matchSource;
 
-    public NCItemFilter(String regexPattern) {
-        this.regexPattern = regexPattern;
-        Pattern p = null;
-        try {
-            p = Pattern.compile(regexPattern, Pattern.CASE_INSENSITIVE);
-        } catch (PatternSyntaxException e) {
-            p = Pattern.compile(Pattern.quote(regexPattern), Pattern.CASE_INSENSITIVE);
-        }
-        this.compiledPattern = p;
+    public NCItemFilter(String matchSource) {
+        this.matchSource = matchSource;
     }
 
     @Override
     public boolean matches(RecipeEntry recipe) {
-        if (regexPattern == null || regexPattern.isEmpty()) {
+        if (matchSource == null || matchSource.isEmpty() || matchSource.equals("*")) {
             return true;
         }
 
         // 检查 specialItems
         for (ItemStack item : recipe.specialItems) {
             if (item == null) continue;
-            String itemId = getItemIdentifier(item);
-            if (compiledPattern.matcher(itemId)
-                .find()) {
+            if (checkMatch(item)) {
                 return true;
             }
         }
 
-        // 检查 inputs 中 stackSize == 0 的物品 (GT 标记 NC 的方式之一)
+        // 检查 inputs 中 stackSize == 0 的物品
         for (ItemStack item : recipe.inputs) {
             if (item == null) continue;
             if (item.stackSize == 0) {
-                String itemId = getItemIdentifier(item);
-                if (compiledPattern.matcher(itemId)
-                    .find()) {
+                if (checkMatch(item)) {
                     return true;
                 }
             }
@@ -59,23 +49,45 @@ public class NCItemFilter implements IRecipeFilter {
         return false;
     }
 
-    private String getItemIdentifier(ItemStack stack) {
+    private boolean checkMatch(ItemStack stack) {
         Item item = stack.getItem();
-        if (item == null) return "";
-        String registryName = Item.itemRegistry.getNameForObject(item);
-        if (registryName == null) return "";
-        if (stack.getItemDamage() != 0) {
-            return registryName + ":" + stack.getItemDamage();
+        if (item == null) return false;
+
+        int id = Item.getIdFromItem(item);
+        int meta = stack.getItemDamage();
+
+        // 支持 ":" 或 "\" 或 "/" 分隔
+        String[] parts = matchSource.split("[:\\\\/]");
+        try {
+            int targetId = Integer.parseInt(parts[0]);
+            if (id != targetId) return false;
+
+            if (parts.length > 1) {
+                int targetMeta = Integer.parseInt(parts[1]);
+                return meta == targetMeta;
+            }
+            return true;
+        } catch (NumberFormatException e) {
+            // 如果不是数字，回退到字符串 ID 匹配或正则
+            String registryName = Item.itemRegistry.getNameForObject(item);
+            if (registryName == null) return false;
+
+            try {
+                return Pattern.compile(matchSource, Pattern.CASE_INSENSITIVE)
+                    .matcher(registryName + ":" + meta)
+                    .find();
+            } catch (PatternSyntaxException e2) {
+                return (registryName + ":" + meta).contains(matchSource);
+            }
         }
-        return registryName;
     }
 
     @Override
     public String getDescription() {
-        return "NC 物品匹配: " + regexPattern;
+        return "NC 物品匹配: " + matchSource;
     }
 
     public String getRegexPattern() {
-        return regexPattern;
+        return matchSource;
     }
 }

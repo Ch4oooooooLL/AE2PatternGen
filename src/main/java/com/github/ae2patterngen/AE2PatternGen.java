@@ -33,7 +33,8 @@ public class AE2PatternGen {
 
     @Mod.EventHandler
     public void init(FMLInitializationEvent event) {
-        proxy.init(event);
+        instance = this; // 显式赋值以防注入问题
+        proxy.init(event, this);
     }
 
     @Mod.EventHandler

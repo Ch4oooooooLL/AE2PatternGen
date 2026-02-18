@@ -29,7 +29,7 @@ public class InputOreDictFilter implements IRecipeFilter {
 
     @Override
     public boolean matches(RecipeEntry recipe) {
-        if (regexPattern == null || regexPattern.isEmpty()) {
+        if (regexPattern == null || regexPattern.isEmpty() || regexPattern.equals("*")) {
             return true;
         }
 
