@@ -1,0 +1,15 @@
+[
+  {
+    "modid": "${modId}",
+    "name": "${modName}",
+    "description": "Batch generate AE2 encoded patterns from GT recipe maps with configurable filters.",
+    "version": "${modVersion}",
+    "mcversion": "${minecraftVersion}",
+    "url": "",
+    "authorList": ["AE2PatternGen"],
+    "credits": "",
+    "logoFile": "",
+    "screenshots": [],
+    "dependencies": ["gregtech", "appliedenergistics2", "NotEnoughItems"]
+  }
+]

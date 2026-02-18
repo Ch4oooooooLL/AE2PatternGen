@@ -1,0 +1,69 @@
+﻿
+> Configure project :
+.\gradlew.bat : [DEPRECATION NOTICE] Support for runnin
+g Gradle using Java versions older than 21 with the Ret
+roFuturaGradle plugin is scheduled to be removed, pleas
+e upgrade your local and CI workflow Java version to 21
+ or newer. This does NOT mean that mod code has to use 
+newer Java, the Gradle process itself will require Java
+ 21 but the compiler and mod code can keep on using Jav
+a 8.
+所在位置 行:1 字符: 1
++ .\gradlew.bat compileJava 2>&1 | Out-File -FilePath "
+D:\CODE\AE2Patte ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([DEPRECATI
+O    N NO...n using Java 8.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+This mod must be version controlled by Git AND the repo
+sitory must provide at least one Git tag,
+or the VERSION override must be set! (Do NOT download f
+rom GitHub using the ZIP option, instead
+clone the repository, see https://gtnh.miraheze.org/wik
+i/Development for details.
+
+If you don't want Git-based versioning, you can also re
+place it with a custom mechanism by setting
+gtnh.modules.gitVersion = false
+in your project's gradle.properties file, and populatin
+g project.ext.modVersion with a valid string in your bu
+ildscript.
+
+Version override set to NO-GIT-TAG-SET!
+You might want to check out './gradlew :faq' if your build fails.
+Build script update from 1.0.40 to 1.0.50 available! Run ./gradlew updateBuildScript
+
+> Task :extractDependencyATs SKIPPED
+> Task :generateForgeSrgMappings SKIPPED
+> Task :downloadVanillaJars SKIPPED
+> Task :mergeVanillaSidedJars SKIPPED
+> Task :deobfuscateMergedJarToSrg SKIPPED
+> Task :downloadFernflower SKIPPED
+> Task :decompileSrgJar SKIPPED
+> Task :cleanupDecompSrgJar SKIPPED
+> Task :patchDecompiledJar SKIPPED
+> Task :applySourceAccessTransformers SKIPPED
+> Task :remapDecompiledJar SKIPPED
+> Task :decompressDecompiledSources UP-TO-DATE
+> Task :compilePatchedMcJava UP-TO-DATE
+> Task :processPatchedMcResources UP-TO-DATE
+> Task :patchedMcClasses UP-TO-DATE
+> Task :compileApiJava NO-SOURCE
+> Task :processApiResources NO-SOURCE
+> Task :apiClasses UP-TO-DATE
+> Task :injectTags UP-TO-DATE
+> Task :compileInjectedTagsJava UP-TO-DATE
+> Task :extractNatives2 UP-TO-DATE
+> Task :createMcLauncherFiles UP-TO-DATE
+> Task :compileMcLauncherJava UP-TO-DATE
+> Task :processInjectedTagsResources NO-SOURCE
+> Task :injectedTagsClasses UP-TO-DATE
+> Task :processMcLauncherResources NO-SOURCE
+> Task :mcLauncherClasses UP-TO-DATE
+
+> Task :compileJava
+Jabel: initialized
+
+BUILD SUCCESSFUL in 4s
+9 actionable tasks: 1 executed, 8 up-to-date

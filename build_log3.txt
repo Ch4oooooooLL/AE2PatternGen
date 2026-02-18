@@ -1,0 +1,107 @@
+﻿
+> Configure project :
+.\gradlew.bat : [DEPRECATION NOTICE] Support for runnin
+g Gradle using Java versions older than 21 with the Ret
+roFuturaGradle plugin is scheduled to be removed, pleas
+e upgrade your local and CI workflow Java version to 21
+ or newer. This does NOT mean that mod code has to use 
+newer Java, the Gradle process itself will require Java
+ 21 but the compiler and mod code can keep on using Jav
+a 8.
+所在位置 行:1 字符: 1
++ .\gradlew.bat build 2>&1 | Out-File -FilePath "D:\COD
+E\AE2PatternGen\ ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([DEPRECAT 
+   ION NO...n using Java 8.:String) [], RemoteExcepti  
+  on
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+This mod must be version controlled by Git AND the repo
+sitory must provide at least one Git tag,
+or the VERSION override must be set! (Do NOT download f
+rom GitHub using the ZIP option, instead
+clone the repository, see https://gtnh.miraheze.org/wik
+i/Development for details.
+
+If you don't want Git-based versioning, you can also re
+place it with a custom mechanism by setting
+gtnh.modules.gitVersion = false
+in your project's gradle.properties file, and populatin
+g project.ext.modVersion with a valid string in your bu
+ildscript.
+
+Version override set to NO-GIT-TAG-SET!
+You might want to check out './gradlew :faq' if your build fails.
+Build script update from 1.0.40 to 1.0.50 available! Run ./gradlew updateBuildScript
+Recommend replacing '4.19.0' with '4.19' for Eclipse JD
+T
+
+> Task :extractDependencyATs SKIPPED
+> Task :generateForgeSrgMappings SKIPPED
+> Task :downloadVanillaJars SKIPPED
+> Task :mergeVanillaSidedJars SKIPPED
+> Task :deobfuscateMergedJarToSrg SKIPPED
+> Task :downloadFernflower SKIPPED
+> Task :decompileSrgJar SKIPPED
+> Task :cleanupDecompSrgJar SKIPPED
+> Task :patchDecompiledJar SKIPPED
+> Task :applySourceAccessTransformers SKIPPED
+> Task :remapDecompiledJar SKIPPED
+> Task :decompressDecompiledSources UP-TO-DATE
+> Task :compilePatchedMcJava UP-TO-DATE
+> Task :processPatchedMcResources UP-TO-DATE
+> Task :patchedMcClasses UP-TO-DATE
+> Task :compileApiJava NO-SOURCE
+> Task :processApiResources NO-SOURCE
+> Task :apiClasses UP-TO-DATE
+> Task :injectTags UP-TO-DATE
+> Task :compileInjectedTagsJava UP-TO-DATE
+> Task :extractNatives2 UP-TO-DATE
+> Task :createMcLauncherFiles UP-TO-DATE
+> Task :compileMcLauncherJava UP-TO-DATE
+> Task :processInjectedTagsResources NO-SOURCE
+> Task :injectedTagsClasses UP-TO-DATE
+> Task :processMcLauncherResources NO-SOURCE
+> Task :mcLauncherClasses UP-TO-DATE
+
+> Task :compileJava
+Jabel: initialized
+
+> Task :processResources
+> Task :classes
+> Task :jar
+> Task :packageMcLauncher UP-TO-DATE
+> Task :packagePatchedMc UP-TO-DATE
+> Task :reobfJar
+> Task :sourcesJar
+> Task :assemble
+> Task :checkstyleApi NO-SOURCE
+> Task :compileIdeVirtualMainJava SKIPPED
+> Task :processIdeVirtualMainResources SKIPPED
+> Task :spotlessInternalRegisterDependencies UP-TO-DATE
+> Task :spotlessJava
+> Task :spotlessJavaCheck
+> Task :spotlessKotlin UP-TO-DATE
+> Task :spotlessKotlinCheck UP-TO-DATE
+> Task :spotlessMisc UP-TO-DATE
+> Task :spotlessMiscCheck UP-TO-DATE
+> Task :spotlessScala UP-TO-DATE
+> Task :spotlessScalaCheck UP-TO-DATE
+> Task :spotlessCheck
+> Task :ideVirtualMainClasses SKIPPED
+> Task :checkstyleIdeVirtualMain SKIPPED
+> Task :checkstyleInjectedTags SKIPPED
+> Task :checkstyleMcLauncher SKIPPED
+> Task :checkstylePatchedMc SKIPPED
+> Task :compileTestJava NO-SOURCE
+> Task :processTestResources NO-SOURCE
+> Task :testClasses UP-TO-DATE
+> Task :checkstyleTest NO-SOURCE
+> Task :test NO-SOURCE
+> Task :checkstyleMain
+> Task :check
+> Task :build
+
+BUILD SUCCESSFUL in 8s
+25 actionable tasks: 8 executed, 17 up-to-date
