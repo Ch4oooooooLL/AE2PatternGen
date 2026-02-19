@@ -146,6 +146,32 @@ public class GTRecipeSource {
                     .append(",");
             }
         }
+        sb.append("|FI:");
+        if (recipe.mFluidInputs != null) {
+            for (net.minecraftforge.fluids.FluidStack fs : recipe.mFluidInputs) {
+                if (fs != null && fs.getFluid() != null) {
+                    sb.append(
+                        fs.getFluid()
+                            .getName())
+                        .append("@")
+                        .append(fs.amount)
+                        .append(",");
+                }
+            }
+        }
+        sb.append("|FO:");
+        if (recipe.mFluidOutputs != null) {
+            for (net.minecraftforge.fluids.FluidStack fs : recipe.mFluidOutputs) {
+                if (fs != null && fs.getFluid() != null) {
+                    sb.append(
+                        fs.getFluid()
+                            .getName())
+                        .append("@")
+                        .append(fs.amount)
+                        .append(",");
+                }
+            }
+        }
         return sb.toString();
     }
 

@@ -8,4 +8,7 @@ dependencies {
     compileOnly("com.github.GTNewHorizons:NotEnoughItems:2.8.44-GTNH:dev") {
         transitive = false
     }
+    compileOnly("com.github.GTNewHorizons:AE2FluidCraft-Rework:1.3.46-gtnh:dev") {
+        transitive = false
+    }
 }
