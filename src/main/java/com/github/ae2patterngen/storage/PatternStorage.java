@@ -160,6 +160,65 @@ public class PatternStorage {
         return extracted;
     }
 
+    /**
+     * 删除存储中指定索引的样板
+     *
+     * @return 被删除的样板，或 null（索引越界）
+     */
+    public static ItemStack delete(UUID playerUUID, int index) {
+        List<ItemStack> all = load(playerUUID);
+        if (index < 0 || index >= all.size()) return null;
+
+        ItemStack removed = all.remove(index);
+
+        if (all.isEmpty()) {
+            clear(playerUUID);
+        } else {
+            StorageSummary summary = getSummary(playerUUID);
+            save(playerUUID, all, summary.source);
+        }
+
+        return removed;
+    }
+
+    /**
+     * 获取指定页的样板摘要预览
+     *
+     * @param page     页码 (0-indexed)
+     * @param pageSize 每页数量
+     * @return 该页的 StorageSummary（previews 仅包含该页的样板名称）
+     */
+    public static StorageSummary getPage(UUID playerUUID, int page, int pageSize) {
+        try {
+            File file = getStorageFile(playerUUID);
+            if (!file.exists()) return StorageSummary.EMPTY;
+
+            NBTTagCompound root = CompressedStreamTools.readCompressed(new FileInputStream(file));
+            int count = root.getInteger(KEY_COUNT);
+            String source = root.getString(KEY_SOURCE);
+            long timestamp = root.getLong(KEY_TIMESTAMP);
+
+            if (count == 0) return StorageSummary.EMPTY;
+
+            NBTTagList list = root.getTagList(KEY_PATTERNS, 10);
+            int start = page * pageSize;
+            int end = Math.min(start + pageSize, list.tagCount());
+
+            List<String> previews = new ArrayList<>();
+            for (int i = start; i < end; i++) {
+                ItemStack stack = ItemStack.loadItemStackFromNBT(list.getCompoundTagAt(i));
+                if (stack != null) {
+                    previews.add(stack.getDisplayName());
+                }
+            }
+
+            return new StorageSummary(count, source, timestamp, previews);
+        } catch (Exception e) {
+            System.err.println("[AE2PatternGen] Failed to read storage page: " + e.getMessage());
+            return StorageSummary.EMPTY;
+        }
+    }
+
     private static File getStorageFile(UUID playerUUID) {
         File worldDir = DimensionManager.getCurrentSaveRootDirectory();
         File storageDir = new File(worldDir, DIR_NAME);

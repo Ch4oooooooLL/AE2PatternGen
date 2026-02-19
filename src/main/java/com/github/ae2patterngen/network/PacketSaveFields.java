@@ -22,17 +22,19 @@ public class PacketSaveFields implements IMessage {
     private String ncItem;
     private String blacklistInput;
     private String blacklistOutput;
+    private String replacements;
 
     public PacketSaveFields() {}
 
     public PacketSaveFields(String recipeMap, String outputOre, String inputOre, String ncItem, String blacklistInput,
-        String blacklistOutput) {
+        String blacklistOutput, String replacements) {
         this.recipeMap = recipeMap;
         this.outputOre = outputOre;
         this.inputOre = inputOre;
         this.ncItem = ncItem;
         this.blacklistInput = blacklistInput;
         this.blacklistOutput = blacklistOutput;
+        this.replacements = replacements;
     }
 
     @Override
@@ -43,6 +45,7 @@ public class PacketSaveFields implements IMessage {
         ncItem = ByteBufUtils.readUTF8String(buf);
         blacklistInput = ByteBufUtils.readUTF8String(buf);
         blacklistOutput = ByteBufUtils.readUTF8String(buf);
+        replacements = ByteBufUtils.readUTF8String(buf);
     }
 
     @Override
@@ -53,6 +56,7 @@ public class PacketSaveFields implements IMessage {
         ByteBufUtils.writeUTF8String(buf, ncItem != null ? ncItem : "");
         ByteBufUtils.writeUTF8String(buf, blacklistInput != null ? blacklistInput : "");
         ByteBufUtils.writeUTF8String(buf, blacklistOutput != null ? blacklistOutput : "");
+        ByteBufUtils.writeUTF8String(buf, replacements != null ? replacements : "");
     }
 
     public static class Handler implements IMessageHandler<PacketSaveFields, IMessage> {
@@ -71,7 +75,8 @@ public class PacketSaveFields implements IMessage {
                     message.inputOre,
                     message.ncItem,
                     message.blacklistInput,
-                    message.blacklistOutput);
+                    message.blacklistOutput,
+                    message.replacements);
             }
 
             return null;

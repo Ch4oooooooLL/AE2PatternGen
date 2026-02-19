@@ -8,6 +8,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.EnumChatFormatting;
 
+import com.github.ae2patterngen.encoder.OreDictReplacer;
 import com.github.ae2patterngen.encoder.PatternEncoder;
 import com.github.ae2patterngen.filter.BlacklistFilter;
 import com.github.ae2patterngen.filter.CompositeFilter;
@@ -27,7 +28,7 @@ import io.netty.buffer.ByteBuf;
 /**
  * 客户端 -> 服务端: 请求生成样板
  * <p>
- * v1.2: 生成结果写入虚拟仓储文件，不再直接放入背包
+ * v1.3: 支持矿辞替换规则
  */
 public class PacketGeneratePatterns implements IMessage {
 
@@ -37,17 +38,19 @@ public class PacketGeneratePatterns implements IMessage {
     private String ncItem;
     private String blacklistInput;
     private String blacklistOutput;
+    private String replacements;
 
     public PacketGeneratePatterns() {}
 
     public PacketGeneratePatterns(String recipeMapId, String outputOreDict, String inputOreDict, String ncItem,
-        String blacklistInput, String blacklistOutput) {
+        String blacklistInput, String blacklistOutput, String replacements) {
         this.recipeMapId = recipeMapId;
         this.outputOreDict = outputOreDict;
         this.inputOreDict = inputOreDict;
         this.ncItem = ncItem;
         this.blacklistInput = blacklistInput;
         this.blacklistOutput = blacklistOutput;
+        this.replacements = replacements;
     }
 
     @Override
@@ -58,6 +61,7 @@ public class PacketGeneratePatterns implements IMessage {
         ncItem = ByteBufUtils.readUTF8String(buf);
         blacklistInput = ByteBufUtils.readUTF8String(buf);
         blacklistOutput = ByteBufUtils.readUTF8String(buf);
+        replacements = ByteBufUtils.readUTF8String(buf);
     }
 
     @Override
@@ -68,6 +72,7 @@ public class PacketGeneratePatterns implements IMessage {
         ByteBufUtils.writeUTF8String(buf, ncItem != null ? ncItem : "");
         ByteBufUtils.writeUTF8String(buf, blacklistInput != null ? blacklistInput : "");
         ByteBufUtils.writeUTF8String(buf, blacklistOutput != null ? blacklistOutput : "");
+        ByteBufUtils.writeUTF8String(buf, replacements != null ? replacements : "");
     }
 
     public static class Handler implements IMessageHandler<PacketGeneratePatterns, IMessage> {
@@ -149,7 +154,29 @@ public class PacketGeneratePatterns implements IMessage {
                 return null;
             }
 
-            // 5. 编码样板
+            // 5. 应用矿辞替换
+            OreDictReplacer replacer = new OreDictReplacer(message.replacements);
+            if (replacer.hasRules()) {
+                List<RecipeEntry> replaced = new java.util.ArrayList<>();
+                for (RecipeEntry recipe : filtered) {
+                    replaced.add(
+                        new RecipeEntry(
+                            recipe.sourceType,
+                            recipe.recipeMapId,
+                            recipe.machineDisplayName,
+                            replacer.apply(recipe.inputs),
+                            replacer.apply(recipe.outputs),
+                            recipe.fluidInputs,
+                            recipe.fluidOutputs,
+                            recipe.specialItems,
+                            recipe.duration,
+                            recipe.euPerTick));
+                }
+                filtered = replaced;
+                player.addChatMessage(new ChatComponentText(EnumChatFormatting.GRAY + "[AE2PatternGen] 已应用矿辞替换规则"));
+            }
+
+            // 6. 编码样板
             List<ItemStack> patterns = PatternEncoder.encodeBatch(filtered);
 
             if (patterns.isEmpty()) {
@@ -157,7 +184,7 @@ public class PacketGeneratePatterns implements IMessage {
                 return null;
             }
 
-            // 6. 写入虚拟仓储
+            // 7. 写入虚拟仓储
             PatternStorage.save(uuid, patterns, message.recipeMapId);
 
             player.addChatMessage(

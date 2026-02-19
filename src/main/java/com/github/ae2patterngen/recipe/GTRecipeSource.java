@@ -133,6 +133,7 @@ public class GTRecipeSource {
                     .append("@")
                     .append(is.stackSize)
                     .append(",");
+                else sb.append("NULL,");
             }
         }
         sb.append("|");
@@ -144,6 +145,7 @@ public class GTRecipeSource {
                     .append("@")
                     .append(is.stackSize)
                     .append(",");
+                else sb.append("NULL,");
             }
         }
         sb.append("|FI:");
