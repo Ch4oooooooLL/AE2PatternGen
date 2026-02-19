@@ -5,7 +5,7 @@ import net.minecraft.inventory.Container;
 import net.minecraft.item.ItemStack;
 
 /**
- * 样本生成器的影子容器 (无槽位)
+ * 样板生成器的影子容器 (无槽位)
  */
 public class ContainerPatternGen extends Container {
 

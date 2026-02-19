@@ -84,7 +84,7 @@ public class GuiPatternStorage extends GuiContainer {
         // 标题栏
         int titleY = guiTop + 6;
         fontRendererObj
-            .drawStringWithShadow("\u25B8 \u69D8\u677F\u5009\u5132", guiLeft + PAD + 2, titleY, COL_TITLE_TEXT);
+            .drawStringWithShadow("\u25B8 \u6837\u677F\u4ED3\u50A8", guiLeft + PAD + 2, titleY, COL_TITLE_TEXT);
         drawRect(guiLeft + PAD, guiTop + 18, guiLeft + GUI_W - PAD, guiTop + 19, COL_BORDER_GLOW);
 
         int contentLeft = guiLeft + PAD;

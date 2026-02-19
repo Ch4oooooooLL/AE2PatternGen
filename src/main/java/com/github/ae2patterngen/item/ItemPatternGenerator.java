@@ -22,7 +22,7 @@ import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
 /**
- * 样本生成器物品 — 三种交互模式:
+ * 样板生成器物品 — 三种交互模式:
  * <ul>
  * <li>正常右键 (空气) → 打开配置 GUI</li>
  * <li>蹲下右键 (空气) → 打开仓储 GUI</li>
