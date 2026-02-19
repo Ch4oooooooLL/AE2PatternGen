@@ -1,8 +1,8 @@
 package com.github.ae2patterngen.network;
 
 import java.util.List;
+import java.util.UUID;
 
-import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ChatComponentText;
@@ -16,6 +16,7 @@ import com.github.ae2patterngen.filter.NCItemFilter;
 import com.github.ae2patterngen.filter.OutputOreDictFilter;
 import com.github.ae2patterngen.recipe.GTRecipeSource;
 import com.github.ae2patterngen.recipe.RecipeEntry;
+import com.github.ae2patterngen.storage.PatternStorage;
 
 import cpw.mods.fml.common.network.ByteBufUtils;
 import cpw.mods.fml.common.network.simpleimpl.IMessage;
@@ -25,6 +26,8 @@ import io.netty.buffer.ByteBuf;
 
 /**
  * 客户端 -> 服务端: 请求生成样板
+ * <p>
+ * v1.2: 生成结果写入虚拟仓储文件，不再直接放入背包
  */
 public class PacketGeneratePatterns implements IMessage {
 
@@ -72,6 +75,20 @@ public class PacketGeneratePatterns implements IMessage {
         @Override
         public IMessage onMessage(PacketGeneratePatterns message, MessageContext ctx) {
             EntityPlayerMP player = ctx.getServerHandler().playerEntity;
+            UUID uuid = player.getUniqueID();
+
+            // 检查仓储是否有残留样板
+            if (!PatternStorage.isEmpty(uuid)) {
+                PatternStorage.StorageSummary existing = PatternStorage.getSummary(uuid);
+                player.addChatMessage(
+                    new ChatComponentText(
+                        EnumChatFormatting.RED + "[AE2PatternGen] 仓储中仍有 "
+                            + existing.count
+                            + " 个未清空的样板 (来源: "
+                            + existing.source
+                            + ")。请先蹲下右键查看并取出/清空后再生成新样板。"));
+                return null;
+            }
 
             // 1. 查找匹配的配方表
             List<String> matchedMaps = GTRecipeSource.findMatchingRecipeMaps(message.recipeMapId);
@@ -132,32 +149,22 @@ public class PacketGeneratePatterns implements IMessage {
                 return null;
             }
 
-            // 编码样板
+            // 5. 编码样板
             List<ItemStack> patterns = PatternEncoder.encodeBatch(filtered);
 
-            int givenToInventory = 0;
-            int droppedOnGround = 0;
-
-            for (ItemStack pattern : patterns) {
-                if (!player.inventory.addItemStackToInventory(pattern)) {
-                    EntityItem entityItem = player.entityDropItem(pattern, 0.5F);
-                    if (entityItem != null) {
-                        entityItem.delayBeforeCanPickup = 0;
-                    }
-                    droppedOnGround++;
-                } else {
-                    givenToInventory++;
-                }
+            if (patterns.isEmpty()) {
+                player.addChatMessage(new ChatComponentText(EnumChatFormatting.YELLOW + "[AE2PatternGen] 编码后无有效样板"));
+                return null;
             }
 
-            player.inventoryContainer.detectAndSendChanges();
+            // 6. 写入虚拟仓储
+            PatternStorage.save(uuid, patterns, message.recipeMapId);
 
             player.addChatMessage(
                 new ChatComponentText(
-                    EnumChatFormatting.GREEN + "[AE2PatternGen] 生成完成! 放入背包: "
-                        + givenToInventory
-                        + ", 掉落地面: "
-                        + droppedOnGround));
+                    EnumChatFormatting.GREEN + "[AE2PatternGen] 已生成 "
+                        + patterns.size()
+                        + " 个样板并存入仓储! 蹲下右键空气查看，蹲下右键容器导出。"));
 
             return null;
         }

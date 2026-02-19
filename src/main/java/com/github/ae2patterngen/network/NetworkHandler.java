@@ -23,6 +23,8 @@ public class NetworkHandler {
             Side.SERVER);
 
         INSTANCE.registerMessage(PacketSaveFields.Handler.class, PacketSaveFields.class, packetId++, Side.SERVER);
+
+        INSTANCE.registerMessage(PacketStorageAction.Handler.class, PacketStorageAction.class, packetId++, Side.SERVER);
     }
 
     public static void sendToServer(PacketGeneratePatterns packet) {
@@ -30,6 +32,10 @@ public class NetworkHandler {
     }
 
     public static void sendSaveFieldsToServer(PacketSaveFields packet) {
+        INSTANCE.sendToServer(packet);
+    }
+
+    public static void sendStorageAction(PacketStorageAction packet) {
         INSTANCE.sendToServer(packet);
     }
 }
