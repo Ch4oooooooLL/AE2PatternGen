@@ -41,6 +41,7 @@ public class ItemPatternGenerator extends Item {
     public static final String NBT_NC_ITEM = "ncItem";
     public static final String NBT_BLACKLIST_INPUT = "blacklistInput";
     public static final String NBT_BLACKLIST_OUTPUT = "blacklistOutput";
+    public static final String NBT_REPLACEMENTS = "replacements";
 
     @SideOnly(Side.CLIENT)
     private IIcon blankPatternIcon;
@@ -163,12 +164,13 @@ public class ItemPatternGenerator extends Item {
     }
 
     public static void saveAllFields(ItemStack stack, String recipeMap, String outputOre, String inputOre,
-        String ncItem, String blacklistInput, String blacklistOutput) {
+        String ncItem, String blacklistInput, String blacklistOutput, String replacements) {
         saveField(stack, NBT_RECIPE_MAP, recipeMap);
         saveField(stack, NBT_OUTPUT_ORE, outputOre);
         saveField(stack, NBT_INPUT_ORE, inputOre);
         saveField(stack, NBT_NC_ITEM, ncItem);
         saveField(stack, NBT_BLACKLIST_INPUT, blacklistInput);
         saveField(stack, NBT_BLACKLIST_OUTPUT, blacklistOutput);
+        saveField(stack, NBT_REPLACEMENTS, replacements);
     }
 }

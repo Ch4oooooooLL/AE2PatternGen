@@ -12,12 +12,15 @@ import com.github.ae2patterngen.network.NetworkHandler;
 import com.github.ae2patterngen.network.PacketStorageAction;
 
 /**
- * 样板仓储 GUI — 纯文字渲染，展示存储统计和前N条预览
+ * 样板仓储 GUI — 纯文字渲染，展示存储统计和分页预览
+ * <p>
+ * 支持: 翻页浏览 / 逐条删除 / 取出到背包 / 一键清空
  */
 public class GuiPatternStorage extends GuiContainer {
 
     private static final int GUI_W = 260;
-    private static final int GUI_H = 240;
+    private static final int GUI_H = 260;
+    private static final int PAGE_SIZE = 8;
 
     // 调色板 (与 GuiPatternGen 一致)
     private static final int COL_PANEL_BG = 0xF0181825;
@@ -38,6 +41,8 @@ public class GuiPatternStorage extends GuiContainer {
     private static final int COL_BTN_DANGER_HOVER = 0xFFAA3333;
     private static final int COL_PREVIEW_TEXT = 0xFF99AACC;
     private static final int COL_EMPTY_TEXT = 0xFF666688;
+    private static final int COL_DELETE_NORMAL = 0xFF5A2E2E;
+    private static final int COL_DELETE_HOVER = 0xFF7A3D3D;
 
     private static final int PAD = 8;
     private static final int CARD_PAD = 6;
@@ -45,6 +50,16 @@ public class GuiPatternStorage extends GuiContainer {
     private final ContainerPatternStorage container;
     private GuiButton btnExtract;
     private GuiButton btnClear;
+    private GuiButton btnPrev;
+    private GuiButton btnNext;
+
+    private int currentPage = 0;
+
+    // 存储每条预览行的 Y 位置 (用于删除按钮点击检测)
+    private int[] previewLineY = new int[PAGE_SIZE];
+    private int previewStartX;
+    private int deleteButtonX;
+    private int actualPreviewCount = 0;
 
     public GuiPatternStorage(ContainerPatternStorage container) {
         super(container);
@@ -57,9 +72,9 @@ public class GuiPatternStorage extends GuiContainer {
     public void initGui() {
         super.initGui();
 
-        int btnW = 100;
+        int btnW = 90;
         int btnH = 20;
-        int btnY = guiTop + GUI_H - 46;
+        int btnY = guiTop + GUI_H - 48;
 
         btnExtract = new GuiButton(
             0,
@@ -70,8 +85,15 @@ public class GuiPatternStorage extends GuiContainer {
             "\u53D6\u51FA\u5230\u80CC\u5305");
         btnClear = new GuiButton(1, guiLeft + (GUI_W / 2 + 4), btnY, btnW, btnH, "\u4E00\u952E\u6E05\u7A7A");
 
+        int navBtnW = 40;
+        int navY = btnY;
+        btnPrev = new GuiButton(2, guiLeft + PAD, navY, navBtnW, btnH, "\u25C0");
+        btnNext = new GuiButton(3, guiLeft + GUI_W - PAD - navBtnW, navY, navBtnW, btnH, "\u25B6");
+
         buttonList.add(btnExtract);
         buttonList.add(btnClear);
+        buttonList.add(btnPrev);
+        buttonList.add(btnNext);
     }
 
     @Override
@@ -84,7 +106,7 @@ public class GuiPatternStorage extends GuiContainer {
         // 标题栏
         int titleY = guiTop + 6;
         fontRendererObj
-            .drawStringWithShadow("\u25B8 \u69D8\u677F\u5009\u5132", guiLeft + PAD + 2, titleY, COL_TITLE_TEXT);
+            .drawStringWithShadow("\u25B8 \u6837\u677F\u4ED3\u50A8", guiLeft + PAD + 2, titleY, COL_TITLE_TEXT);
         drawRect(guiLeft + PAD, guiTop + 18, guiLeft + GUI_W - PAD, guiTop + 19, COL_BORDER_GLOW);
 
         int contentLeft = guiLeft + PAD;
@@ -128,49 +150,81 @@ public class GuiPatternStorage extends GuiContainer {
                 COL_LABEL_TEXT);
             y += 12 + CARD_PAD + 4;
 
-            // 预览卡片
+            // 预览卡片（分页）
             List<String> previews = container.previews;
-            int previewLines = Math.min(previews.size(), 8);
-            int previewH = 14 + previewLines * 11 + (previewLines > 0 ? 11 : 0) + CARD_PAD;
+            int totalPages = Math.max(1, (container.patternCount + PAGE_SIZE - 1) / PAGE_SIZE);
+            if (currentPage >= totalPages) currentPage = totalPages - 1;
+            if (currentPage < 0) currentPage = 0;
+
+            int startIdx = currentPage * PAGE_SIZE;
+            int endIdx = Math.min(startIdx + PAGE_SIZE, startIdx + previews.size());
+            actualPreviewCount = endIdx - startIdx;
+
+            int previewH = 14 + actualPreviewCount * 12 + 12 + CARD_PAD;
             drawCard(contentLeft, y, GUI_W - PAD * 2, previewH);
             fontRendererObj.drawStringWithShadow(
                 "\u00A7r\u6837\u677F\u9884\u89C8",
                 contentLeft + CARD_PAD,
                 y + 3,
                 COL_SECTION_TEXT);
+
+            // 页码在标题右侧
+            String pageInfo = EnumChatFormatting.DARK_GRAY + "(" + (currentPage + 1) + "/" + totalPages + ")";
+            int pageInfoW = fontRendererObj.getStringWidth(pageInfo);
+            fontRendererObj.drawStringWithShadow(
+                pageInfo,
+                contentLeft + GUI_W - PAD * 2 - CARD_PAD - pageInfoW,
+                y + 3,
+                COL_EMPTY_TEXT);
             y += 14;
 
-            for (int i = 0; i < previewLines; i++) {
-                String line = EnumChatFormatting.GRAY + "#" + (i + 1) + "  " + EnumChatFormatting.WHITE;
-                String name = previews.get(i);
-                // 截断过长的名称
-                if (fontRendererObj.getStringWidth(name) > GUI_W - PAD * 2 - CARD_PAD * 2 - 30) {
-                    while (fontRendererObj.getStringWidth(name + "...") > GUI_W - PAD * 2 - CARD_PAD * 2 - 30
-                        && name.length() > 5) {
+            previewStartX = contentLeft + CARD_PAD;
+            deleteButtonX = contentLeft + GUI_W - PAD * 2 - CARD_PAD - 10;
+
+            for (int i = 0; i < actualPreviewCount; i++) {
+                previewLineY[i] = y;
+
+                int globalIdx = startIdx + i;
+                String line = EnumChatFormatting.GRAY + "#" + (globalIdx + 1) + "  " + EnumChatFormatting.WHITE;
+                String name = i < previews.size() ? previews.get(i) : "?";
+                // 截断过长的名称 (留出删除按钮空间)
+                int maxNameW = GUI_W - PAD * 2 - CARD_PAD * 2 - 50;
+                if (fontRendererObj.getStringWidth(name) > maxNameW) {
+                    while (fontRendererObj.getStringWidth(name + "...") > maxNameW && name.length() > 5) {
                         name = name.substring(0, name.length() - 1);
                     }
                     name += "...";
                 }
-                fontRendererObj.drawStringWithShadow(line + name, contentLeft + CARD_PAD, y, COL_PREVIEW_TEXT);
-                y += 11;
+                fontRendererObj.drawStringWithShadow(line + name, previewStartX, y, COL_PREVIEW_TEXT);
+
+                // 删除按钮 [×]
+                boolean deleteHovered = mouseX >= deleteButtonX && mouseX < deleteButtonX + 10
+                    && mouseY >= y - 1
+                    && mouseY < y + 10;
+                int delColor = deleteHovered ? COL_DELETE_HOVER : COL_DELETE_NORMAL;
+                drawRect(deleteButtonX - 1, y - 1, deleteButtonX + 10, y + 10, delColor);
+                fontRendererObj.drawStringWithShadow("\u00D7", deleteButtonX + 1, y, 0xFFAAAA);
+
+                y += 12;
             }
 
-            if (container.patternCount > previewLines) {
-                fontRendererObj.drawStringWithShadow(
-                    EnumChatFormatting.DARK_GRAY + "\u25BC \u5171 "
-                        + container.patternCount
-                        + " \u6761 (\u4EC5\u9884\u89C8\u524D "
-                        + previewLines
-                        + " \u6761)",
-                    contentLeft + CARD_PAD,
-                    y,
-                    COL_EMPTY_TEXT);
-            }
+            // 翻页提示
+            fontRendererObj.drawStringWithShadow(
+                EnumChatFormatting.DARK_GRAY + "\u5171 " + container.patternCount + " \u6761",
+                previewStartX,
+                y,
+                COL_EMPTY_TEXT);
         }
 
         // 自定义按钮
         drawModernButton(btnExtract, mouseX, mouseY, true, false);
         drawModernButton(btnClear, mouseX, mouseY, false, true);
+
+        // 翻页按钮
+        if (container.patternCount > PAGE_SIZE) {
+            drawModernButton(btnPrev, mouseX, mouseY, false, false);
+            drawModernButton(btnNext, mouseX, mouseY, false, false);
+        }
 
         // 状态栏
         int statusY = guiTop + GUI_H - 18;
@@ -250,6 +304,28 @@ public class GuiPatternStorage extends GuiContainer {
         } else if (isMouseOver(btnClear, mouseX, mouseY)) {
             NetworkHandler.sendStorageAction(new PacketStorageAction(PacketStorageAction.ACTION_CLEAR));
             mc.thePlayer.closeScreen();
+        } else if (container.patternCount > PAGE_SIZE && isMouseOver(btnPrev, mouseX, mouseY)) {
+            if (currentPage > 0) {
+                currentPage--;
+            }
+        } else if (container.patternCount > PAGE_SIZE && isMouseOver(btnNext, mouseX, mouseY)) {
+            int totalPages = (container.patternCount + PAGE_SIZE - 1) / PAGE_SIZE;
+            if (currentPage < totalPages - 1) {
+                currentPage++;
+            }
+        } else {
+            // 检查点击删除按钮
+            for (int i = 0; i < actualPreviewCount; i++) {
+                if (mouseX >= deleteButtonX && mouseX < deleteButtonX + 10
+                    && mouseY >= previewLineY[i] - 1
+                    && mouseY < previewLineY[i] + 10) {
+                    int globalIdx = currentPage * PAGE_SIZE + i;
+                    NetworkHandler
+                        .sendStorageAction(new PacketStorageAction(PacketStorageAction.ACTION_DELETE, globalIdx));
+                    mc.thePlayer.closeScreen();
+                    return;
+                }
+            }
         }
     }
 
