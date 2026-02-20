@@ -24,12 +24,17 @@ public class GuiComboBox extends Gui {
     private boolean isEnabled = true;
     private boolean visible = true;
 
+    // Scrolling support
+    private int scrollOffset = 0;
+    private static final int MAX_VISIBLE_ITEMS = 8;
+
     // Colors
     private static final int COL_BG = 0xFF1E1E30;
     private static final int COL_BORDER = 0xFF33335A;
     private static final int COL_HOVER = 0xFF2E3B5A;
     private static final int COL_TEXT = 0xFFFFFFFF;
     private static final int COL_TEXT_DISABLED = 0xFFAAAAAA;
+    private static final int COL_SCROLLBAR = 0xFF5B89FF;
 
     public GuiComboBox(int x, int y, int width, int height, List<String> options) {
         this.xPosition = x;
@@ -74,18 +79,22 @@ public class GuiComboBox extends Gui {
 
         // Draw expanded list if open
         if (isExpanded) {
-            // Draw list above other elements (z-level)
             GL11.glPushMatrix();
             GL11.glTranslatef(0, 0, 300); // Elevate z-level
 
-            int listH = options.size() * height;
+            int visibleCount = Math.min(options.size(), MAX_VISIBLE_ITEMS);
+            int listH = visibleCount * height;
             int listY = yPosition + height;
 
             // Background
             drawRect(xPosition, listY, xPosition + width, listY + listH, COL_BG);
             drawHollowRect(xPosition, listY, width, listH, COL_BORDER);
 
-            for (int i = 0; i < options.size(); i++) {
+            // Draw items
+            for (int i = 0; i < visibleCount; i++) {
+                int actualIdx = i + scrollOffset;
+                if (actualIdx >= options.size()) break;
+
                 int optY = listY + i * height;
                 boolean hovered = mouseX >= xPosition && mouseX < xPosition + width
                     && mouseY >= optY
@@ -95,15 +104,34 @@ public class GuiComboBox extends Gui {
                     drawRect(xPosition + 1, optY, xPosition + width - 1, optY + height, COL_HOVER);
                 }
 
-                String optText = options.get(i);
-                if (i == selectedIndex) {
+                String optText = options.get(actualIdx);
+                if (actualIdx == selectedIndex) {
                     optText = EnumChatFormatting.YELLOW + optText;
                 }
 
                 mc.fontRenderer.drawStringWithShadow(optText, xPosition + 4, optY + (height - 8) / 2, COL_TEXT);
             }
 
+            // Draw Scrollbar hint if needed
+            if (options.size() > MAX_VISIBLE_ITEMS) {
+                int scrollTrackH = listH - 4;
+                int thumbH = Math.max(10, (int) ((float) MAX_VISIBLE_ITEMS / options.size() * scrollTrackH));
+                int thumbY = listY + 2
+                    + (int) ((float) scrollOffset / (options.size() - MAX_VISIBLE_ITEMS) * (scrollTrackH - thumbH));
+                drawRect(xPosition + width - 3, thumbY, xPosition + width - 1, thumbY + thumbH, COL_SCROLLBAR);
+            }
+
             GL11.glPopMatrix();
+        }
+    }
+
+    public void handleMouseWheel(int dWheel) {
+        if (!isExpanded || options.size() <= MAX_VISIBLE_ITEMS) return;
+
+        if (dWheel > 0) { // Scroll up
+            scrollOffset = Math.max(0, scrollOffset - 1);
+        } else if (dWheel < 0) { // Scroll down
+            scrollOffset = Math.min(options.size() - MAX_VISIBLE_ITEMS, scrollOffset + 1);
         }
     }
 
@@ -113,22 +141,27 @@ public class GuiComboBox extends Gui {
         // Check toggle
         if (mouseX >= xPosition && mouseX < xPosition + width && mouseY >= yPosition && mouseY < yPosition + height) {
             isExpanded = !isExpanded;
-            // Play sound
+            if (isExpanded) {
+                // Reset scroll when opening
+                scrollOffset = Math
+                    .max(0, Math.min(selectedIndex - MAX_VISIBLE_ITEMS / 2, options.size() - MAX_VISIBLE_ITEMS));
+            }
             Minecraft.getMinecraft().thePlayer.playSound("gui.button.press", 1.0F, 1.0F);
             return true;
         }
 
         // Check selection if expanded
         if (isExpanded) {
-            int listH = options.size() * height;
+            int visibleCount = Math.min(options.size(), MAX_VISIBLE_ITEMS);
+            int listH = visibleCount * height;
             int listY = yPosition + height;
 
             if (mouseX >= xPosition && mouseX < xPosition + width && mouseY >= listY && mouseY < listY + listH) {
-                int idx = (mouseY - listY) / height;
-                if (idx >= 0 && idx < options.size()) {
-                    selectedIndex = idx;
+                int relativeIdx = (mouseY - listY) / height;
+                int actualIdx = relativeIdx + scrollOffset;
+                if (actualIdx >= 0 && actualIdx < options.size()) {
+                    selectedIndex = actualIdx;
                     isExpanded = false;
-                    // Play sound
                     Minecraft.getMinecraft().thePlayer.playSound("gui.button.press", 1.0F, 1.0F);
                     return true;
                 }

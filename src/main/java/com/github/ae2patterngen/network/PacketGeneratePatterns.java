@@ -195,7 +195,49 @@ public class PacketGeneratePatterns implements IMessage {
                 player.addChatMessage(new ChatComponentText(EnumChatFormatting.GRAY + "[AE2PatternGen] 已应用矿辞替换规则"));
             }
 
-            // 6. 编码样板 (并未实际存入服务器物理世界，只是生成了对象)
+            // [新增] 配方冲突检测与分组 (按产物显示名称)
+            java.util.Map<String, List<RecipeEntry>> groups = new java.util.LinkedHashMap<>();
+            for (RecipeEntry re : filtered) {
+                String key = "Unknown Item";
+                if (re.outputs != null && re.outputs.length > 0 && re.outputs[0] != null) {
+                    key = re.outputs[0].getDisplayName();
+                } else if (re.fluidOutputs != null && re.fluidOutputs.length > 0 && re.fluidOutputs[0] != null) {
+                    key = re.fluidOutputs[0].getLocalizedName();
+                }
+                groups.computeIfAbsent(key, k -> new java.util.ArrayList<>())
+                    .add(re);
+            }
+
+            List<RecipeEntry> nonConflicts = new java.util.ArrayList<>();
+            java.util.Map<String, List<RecipeEntry>> conflicts = new java.util.LinkedHashMap<>();
+            for (java.util.Map.Entry<String, List<RecipeEntry>> entry : groups.entrySet()) {
+                if (entry.getValue()
+                    .size() > 1) {
+                    conflicts.put(entry.getKey(), entry.getValue());
+                } else {
+                    nonConflicts.addAll(entry.getValue());
+                }
+            }
+
+            if (!conflicts.isEmpty()) {
+                // 开启冲突处理会话
+                ConflictSession.start(uuid, message.recipeMapId, nonConflicts, conflicts);
+                player.addChatMessage(
+                    new ChatComponentText(
+                        EnumChatFormatting.YELLOW + "[AE2PatternGen] 检测到 " + conflicts.size() + " 组配方冲突，请进行人工选择..."));
+
+                // 发送第一个冲突给客户端
+                ConflictSession session = ConflictSession.get(uuid);
+                PacketRecipeConflicts firstPacket = new PacketRecipeConflicts(
+                    session.getCurrentProduct(),
+                    session.getCurrentIndex() + 1,
+                    session.getTotalConflicts(),
+                    session.getCurrentRecipes());
+                NetworkHandler.INSTANCE.sendTo(firstPacket, player);
+                return null;
+            }
+
+            // 6. 编码样板
             List<ItemStack> patterns = PatternEncoder.encodeBatch(filtered);
 
             if (patterns.isEmpty()) {

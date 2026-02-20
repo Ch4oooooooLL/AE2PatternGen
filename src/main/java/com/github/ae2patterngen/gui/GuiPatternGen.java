@@ -9,6 +9,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumChatFormatting;
 
 import org.lwjgl.input.Keyboard;
+import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
 
 import com.github.ae2patterngen.item.ItemPatternGenerator;
@@ -500,6 +501,15 @@ public class GuiPatternGen extends GuiContainer {
             return;
         }
         super.keyTyped(c, keyCode);
+    }
+
+    @Override
+    public void handleMouseInput() {
+        super.handleMouseInput();
+        int dWheel = Mouse.getEventDWheel();
+        if (dWheel != 0) {
+            comboTier.handleMouseWheel(dWheel);
+        }
     }
 
     @Override

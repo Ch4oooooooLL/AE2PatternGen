@@ -25,6 +25,14 @@ public class NetworkHandler {
         INSTANCE.registerMessage(PacketSaveFields.Handler.class, PacketSaveFields.class, packetId++, Side.SERVER);
 
         INSTANCE.registerMessage(PacketStorageAction.Handler.class, PacketStorageAction.class, packetId++, Side.SERVER);
+
+        INSTANCE
+            .registerMessage(PacketRecipeConflicts.Handler.class, PacketRecipeConflicts.class, packetId++, Side.CLIENT);
+        INSTANCE.registerMessage(
+            PacketResolveConflicts.Handler.class,
+            PacketResolveConflicts.class,
+            packetId++,
+            Side.SERVER);
     }
 
     public static void sendToServer(PacketGeneratePatterns packet) {
