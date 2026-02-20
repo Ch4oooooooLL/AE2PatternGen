@@ -29,11 +29,12 @@ public class TierFilter implements IRecipeFilter {
         return "Tier=" + targetTier;
     }
 
-    private byte getTier(long euPerTick) {
-        long eu = euPerTick;
-        byte tier = 0;
-        while (eu > 8) {
-            eu >>= 2;
+    private int getTier(long euPerTick) {
+        if (euPerTick <= 0) return -1;
+        long threshold = 8;
+        int tier = 0;
+        while (euPerTick > threshold) {
+            threshold *= 4;
             tier++;
         }
         return tier;
