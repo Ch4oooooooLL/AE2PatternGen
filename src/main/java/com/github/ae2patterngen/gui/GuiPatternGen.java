@@ -62,9 +62,23 @@ public class GuiPatternGen extends GuiContainer {
     private GuiTextField fieldBlacklistOutput;
 
     private GuiComboBox comboTier;
-    private static final java.util.List<String> TIER_OPTIONS = java.util.Arrays
-        .asList("Any", "ULV", "LV", "MV", "HV", "EV", "IV", "LuV", "ZPM", "UV", 
-                "UHV", "UEV", "UIV", "UMV", "UXV", "MAX");
+    private static final java.util.List<String> TIER_OPTIONS = java.util.Arrays.asList(
+        "Any",
+        "ULV",
+        "LV",
+        "MV",
+        "HV",
+        "EV",
+        "IV",
+        "LuV",
+        "ZPM",
+        "UV",
+        "UHV",
+        "UEV",
+        "UIV",
+        "UMV",
+        "UXV",
+        "MAX");
 
     private GuiButton btnList;
     private GuiButton btnPreview;
