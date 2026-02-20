@@ -54,6 +54,8 @@ public class PatternEncoder {
             input.writeToNBT(itemTag);
             if (input.stackSize > 127) {
                 itemTag.setLong("Cnt", input.stackSize);
+                // 覆盖由于 byte((>127)) 产生的负数，防止在读取为原版 ItemStack 时被判定为空
+                itemTag.setByte("Count", (byte) 1);
             }
             inList.appendTag(itemTag);
         }
@@ -67,6 +69,8 @@ public class PatternEncoder {
                 fluidItem.writeToNBT(itemTag);
                 if (fluidItem.stackSize > 127) {
                     itemTag.setLong("Cnt", fluidItem.stackSize);
+                    // 覆盖由于 byte((>127)) 产生的负数，防止被误判为空物品栈
+                    itemTag.setByte("Count", (byte) 1);
                 }
                 inList.appendTag(itemTag);
             }
@@ -83,6 +87,8 @@ public class PatternEncoder {
             output.writeToNBT(itemTag);
             if (output.stackSize > 127) {
                 itemTag.setLong("Cnt", output.stackSize);
+                // 覆盖负数问题
+                itemTag.setByte("Count", (byte) 1);
             }
             outList.appendTag(itemTag);
         }
@@ -96,6 +102,8 @@ public class PatternEncoder {
                 fluidItem.writeToNBT(itemTag);
                 if (fluidItem.stackSize > 127) {
                     itemTag.setLong("Cnt", fluidItem.stackSize);
+                    // 覆盖由于 byte((>127)) 产生的负数，防止被误判为空物品栈
+                    itemTag.setByte("Count", (byte) 1);
                 }
                 outList.appendTag(itemTag);
             }
