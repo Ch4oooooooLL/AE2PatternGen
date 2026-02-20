@@ -57,8 +57,7 @@ public class GuiComboBox extends Gui {
     }
 
     public void drawComboBox(Minecraft mc, int mouseX, int mouseY) {
-        if (!this.visible)
-            return;
+        if (!this.visible) return;
 
         // Draw main box
         drawRect(xPosition, yPosition, xPosition + width, yPosition + height, COL_BG);
@@ -88,8 +87,9 @@ public class GuiComboBox extends Gui {
 
             for (int i = 0; i < options.size(); i++) {
                 int optY = listY + i * height;
-                boolean hovered = mouseX >= xPosition && mouseX < xPosition + width && mouseY >= optY
-                        && mouseY < optY + height;
+                boolean hovered = mouseX >= xPosition && mouseX < xPosition + width
+                    && mouseY >= optY
+                    && mouseY < optY + height;
 
                 if (hovered) {
                     drawRect(xPosition + 1, optY, xPosition + width - 1, optY + height, COL_HOVER);
@@ -108,8 +108,7 @@ public class GuiComboBox extends Gui {
     }
 
     public boolean mouseClicked(int mouseX, int mouseY, int mouseButton) {
-        if (!this.visible || !this.isEnabled)
-            return false;
+        if (!this.visible || !this.isEnabled) return false;
 
         // Check toggle
         if (mouseX >= xPosition && mouseX < xPosition + width && mouseY >= yPosition && mouseY < yPosition + height) {

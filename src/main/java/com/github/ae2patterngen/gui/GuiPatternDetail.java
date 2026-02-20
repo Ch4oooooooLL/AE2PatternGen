@@ -66,12 +66,12 @@ public class GuiPatternDetail extends GuiScreen {
         int btnY = guiTop + GUI_H - PAD - btnH;
 
         btnDelete = new GuiButton(
-                0,
-                guiLeft + (GUI_W / 2 - btnW - 4),
-                btnY,
-                btnW,
-                btnH,
-                "\u5220\u9664\u6B64\u6837\u677F");
+            0,
+            guiLeft + (GUI_W / 2 - btnW - 4),
+            btnY,
+            btnW,
+            btnH,
+            "\u5220\u9664\u6B64\u6837\u677F");
         btnBack = new GuiButton(1, guiLeft + (GUI_W / 2 + 4), btnY, btnW, btnH, "\u8FD4\u56DE");
 
         buttonList.add(btnDelete);
@@ -92,10 +92,10 @@ public class GuiPatternDetail extends GuiScreen {
         // 标题
         int titleY = guiTop + 6;
         fontRendererObj.drawStringWithShadow(
-                "\u25B8 \u6837\u677F\u8BE6\u60C5 #" + (patternIndex + 1),
-                guiLeft + PAD + 2,
-                titleY,
-                COL_TITLE_TEXT);
+            "\u25B8 \u6837\u677F\u8BE6\u60C5 #" + (patternIndex + 1),
+            guiLeft + PAD + 2,
+            titleY,
+            COL_TITLE_TEXT);
         drawRect(guiLeft + PAD, guiTop + 18, guiLeft + GUI_W - PAD, guiTop + 19, COL_BORDER_GLOW);
 
         int contentLeft = guiLeft + PAD;
@@ -109,35 +109,34 @@ public class GuiPatternDetail extends GuiScreen {
 
         drawCard(contentLeft, y, cardW, inputH);
         fontRendererObj.drawStringWithShadow(
-                "\u00A7r\u8F93\u5165 (" + inputNames.size() + ")",
-                contentLeft + CARD_PAD,
-                y + 3,
-                COL_SECTION_TEXT);
+            "\u00A7r\u8F93\u5165 (" + inputNames.size() + ")",
+            contentLeft + CARD_PAD,
+            y + 3,
+            COL_SECTION_TEXT);
         y += 14;
         if (inputNames.isEmpty()) {
             fontRendererObj
-                    .drawStringWithShadow(EnumChatFormatting.GRAY + "(\u65E0)", contentLeft + CARD_PAD, y,
-                            COL_LABEL_TEXT);
+                .drawStringWithShadow(EnumChatFormatting.GRAY + "(\u65E0)", contentLeft + CARD_PAD, y, COL_LABEL_TEXT);
             y += 11;
         } else {
             for (int i = 0; i < displayedInputs; i++) {
                 String name = inputNames.get(i);
                 String displayName = truncate(name, cardW - CARD_PAD * 2 - 10);
                 fontRendererObj.drawStringWithShadow(
-                        EnumChatFormatting.GRAY + "\u2022 " + EnumChatFormatting.WHITE + displayName,
-                        contentLeft + CARD_PAD,
-                        y,
-                        COL_ITEM_TEXT);
+                    EnumChatFormatting.GRAY + "\u2022 " + EnumChatFormatting.WHITE + displayName,
+                    contentLeft + CARD_PAD,
+                    y,
+                    COL_ITEM_TEXT);
                 y += 11;
             }
             if (inputTruncated) {
                 fontRendererObj.drawStringWithShadow(
-                        EnumChatFormatting.DARK_GRAY + "... \u8FD8\u6709 "
-                                + (inputNames.size() - displayedInputs)
-                                + " \u9879",
-                        contentLeft + CARD_PAD,
-                        y,
-                        COL_LABEL_TEXT);
+                    EnumChatFormatting.DARK_GRAY + "... \u8FD8\u6709 "
+                        + (inputNames.size() - displayedInputs)
+                        + " \u9879",
+                    contentLeft + CARD_PAD,
+                    y,
+                    COL_LABEL_TEXT);
                 y += 11;
             }
         }
@@ -158,34 +157,33 @@ public class GuiPatternDetail extends GuiScreen {
 
         drawCard(contentLeft, y, cardW, outputH);
         fontRendererObj.drawStringWithShadow(
-                "\u00A7r\u8F93\u51FA (" + outputNames.size() + ")",
-                contentLeft + CARD_PAD,
-                y + 3,
-                COL_SECTION_TEXT);
+            "\u00A7r\u8F93\u51FA (" + outputNames.size() + ")",
+            contentLeft + CARD_PAD,
+            y + 3,
+            COL_SECTION_TEXT);
         y += 14;
         if (outputNames.isEmpty()) {
             fontRendererObj
-                    .drawStringWithShadow(EnumChatFormatting.GRAY + "(\u65E0)", contentLeft + CARD_PAD, y,
-                            COL_LABEL_TEXT);
+                .drawStringWithShadow(EnumChatFormatting.GRAY + "(\u65E0)", contentLeft + CARD_PAD, y, COL_LABEL_TEXT);
         } else {
             for (int i = 0; i < displayedOutputs; i++) {
                 String name = outputNames.get(i);
                 String displayName = truncate(name, cardW - CARD_PAD * 2 - 10);
                 fontRendererObj.drawStringWithShadow(
-                        EnumChatFormatting.GREEN + "\u25B6 " + EnumChatFormatting.WHITE + displayName,
-                        contentLeft + CARD_PAD,
-                        y,
-                        COL_ITEM_TEXT);
+                    EnumChatFormatting.GREEN + "\u25B6 " + EnumChatFormatting.WHITE + displayName,
+                    contentLeft + CARD_PAD,
+                    y,
+                    COL_ITEM_TEXT);
                 y += 11;
             }
             if (outputTruncated) {
                 fontRendererObj.drawStringWithShadow(
-                        EnumChatFormatting.DARK_GRAY + "... \u8FD8\u6709 "
-                                + (outputNames.size() - displayedOutputs)
-                                + " \u9879",
-                        contentLeft + CARD_PAD,
-                        y,
-                        COL_LABEL_TEXT);
+                    EnumChatFormatting.DARK_GRAY + "... \u8FD8\u6709 "
+                        + (outputNames.size() - displayedOutputs)
+                        + " \u9879",
+                    contentLeft + CARD_PAD,
+                    y,
+                    COL_LABEL_TEXT);
             }
         }
 
@@ -211,8 +209,7 @@ public class GuiPatternDetail extends GuiScreen {
     // ---- 辅助方法 ----
 
     private String truncate(String text, int maxPixelW) {
-        if (fontRendererObj.getStringWidth(text) <= maxPixelW)
-            return text;
+        if (fontRendererObj.getStringWidth(text) <= maxPixelW) return text;
         while (fontRendererObj.getStringWidth(text + "...") > maxPixelW && text.length() > 3) {
             text = text.substring(0, text.length() - 1);
         }
@@ -233,8 +230,8 @@ public class GuiPatternDetail extends GuiScreen {
 
     private void drawModernButton(GuiButton btn, int mouseX, int mouseY, boolean danger) {
         boolean hovered = mouseX >= btn.xPosition && mouseX < btn.xPosition + btn.width
-                && mouseY >= btn.yPosition
-                && mouseY < btn.yPosition + btn.height;
+            && mouseY >= btn.yPosition
+            && mouseY < btn.yPosition + btn.height;
 
         int bgColor;
         if (danger) {
@@ -256,8 +253,8 @@ public class GuiPatternDetail extends GuiScreen {
 
     private boolean isMouseOver(GuiButton btn, int mx, int my) {
         return mx >= btn.xPosition && mx < btn.xPosition + btn.width
-                && my >= btn.yPosition
-                && my < btn.yPosition + btn.height;
+            && my >= btn.yPosition
+            && my < btn.yPosition + btn.height;
     }
 
     @Override

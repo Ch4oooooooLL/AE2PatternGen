@@ -37,14 +37,13 @@ public class PatternStorage {
         try {
             File file = getStorageFile(playerUUID);
             file.getParentFile()
-                    .mkdirs();
+                .mkdirs();
 
             NBTTagCompound root = new NBTTagCompound();
             NBTTagList list = new NBTTagList();
 
             for (ItemStack stack : patterns) {
-                if (stack == null)
-                    continue;
+                if (stack == null) continue;
                 NBTTagCompound tag = new NBTTagCompound();
                 stack.writeToNBT(tag);
                 list.appendTag(tag);
@@ -68,8 +67,7 @@ public class PatternStorage {
         List<ItemStack> patterns = new ArrayList<>();
         try {
             File file = getStorageFile(playerUUID);
-            if (!file.exists())
-                return patterns;
+            if (!file.exists()) return patterns;
 
             NBTTagCompound root = CompressedStreamTools.readCompressed(new FileInputStream(file));
             NBTTagList list = root.getTagList(KEY_PATTERNS, 10); // 10 = NBTTagCompound
@@ -92,16 +90,14 @@ public class PatternStorage {
     public static StorageSummary getSummary(UUID playerUUID) {
         try {
             File file = getStorageFile(playerUUID);
-            if (!file.exists())
-                return StorageSummary.EMPTY;
+            if (!file.exists()) return StorageSummary.EMPTY;
 
             NBTTagCompound root = CompressedStreamTools.readCompressed(new FileInputStream(file));
             int count = root.getInteger(KEY_COUNT);
             String source = root.getString(KEY_SOURCE);
             long timestamp = root.getLong(KEY_TIMESTAMP);
 
-            if (count == 0)
-                return StorageSummary.EMPTY;
+            if (count == 0) return StorageSummary.EMPTY;
 
             // 加载前几条作为预览 (解析产物名)
             List<String> previews = new ArrayList<>();
@@ -171,8 +167,7 @@ public class PatternStorage {
      */
     public static ItemStack delete(UUID playerUUID, int index) {
         List<ItemStack> all = load(playerUUID);
-        if (index < 0 || index >= all.size())
-            return null;
+        if (index < 0 || index >= all.size()) return null;
 
         ItemStack removed = all.remove(index);
 
@@ -196,16 +191,14 @@ public class PatternStorage {
     public static StorageSummary getPage(UUID playerUUID, int page, int pageSize) {
         try {
             File file = getStorageFile(playerUUID);
-            if (!file.exists())
-                return StorageSummary.EMPTY;
+            if (!file.exists()) return StorageSummary.EMPTY;
 
             NBTTagCompound root = CompressedStreamTools.readCompressed(new FileInputStream(file));
             int count = root.getInteger(KEY_COUNT);
             String source = root.getString(KEY_SOURCE);
             long timestamp = root.getLong(KEY_TIMESTAMP);
 
-            if (count == 0)
-                return StorageSummary.EMPTY;
+            if (count == 0) return StorageSummary.EMPTY;
 
             NBTTagList list = root.getTagList(KEY_PATTERNS, 10);
             int start = page * pageSize;
@@ -231,8 +224,7 @@ public class PatternStorage {
      */
     public static PatternDetail getPatternDetail(UUID playerUUID, int index) {
         List<ItemStack> all = load(playerUUID);
-        if (index < 0 || index >= all.size())
-            return null;
+        if (index < 0 || index >= all.size()) return null;
 
         ItemStack pattern = all.get(index);
         List<String> inputs = new ArrayList<>();
@@ -246,10 +238,10 @@ public class PatternStorage {
                 ItemStack item = ItemStack.loadItemStackFromNBT(inList.getCompoundTagAt(i));
                 if (item != null) {
                     long cnt = inList.getCompoundTagAt(i)
-                            .hasKey("Cnt")
-                                    ? inList.getCompoundTagAt(i)
-                                            .getLong("Cnt")
-                                    : item.stackSize;
+                        .hasKey("Cnt")
+                            ? inList.getCompoundTagAt(i)
+                                .getLong("Cnt")
+                            : item.stackSize;
                     inputs.add(item.getDisplayName() + " x" + cnt);
                 }
             }
@@ -259,10 +251,10 @@ public class PatternStorage {
                 ItemStack item = ItemStack.loadItemStackFromNBT(outList.getCompoundTagAt(i));
                 if (item != null) {
                     long cnt = outList.getCompoundTagAt(i)
-                            .hasKey("Cnt")
-                                    ? outList.getCompoundTagAt(i)
-                                            .getLong("Cnt")
-                                    : item.stackSize;
+                        .hasKey("Cnt")
+                            ? outList.getCompoundTagAt(i)
+                                .getLong("Cnt")
+                            : item.stackSize;
                     outputs.add(item.getDisplayName() + " x" + cnt);
                 }
             }
@@ -290,17 +282,15 @@ public class PatternStorage {
         for (int i = 0; i < outList.tagCount(); i++) {
             ItemStack item = ItemStack.loadItemStackFromNBT(outList.getCompoundTagAt(i));
             if (item != null) {
-                if (sb.length() > 0)
-                    sb.append(", ");
+                if (sb.length() > 0) sb.append(", ");
                 long cnt = outList.getCompoundTagAt(i)
-                        .hasKey("Cnt")
-                                ? outList.getCompoundTagAt(i)
-                                        .getLong("Cnt")
-                                : item.stackSize;
+                    .hasKey("Cnt")
+                        ? outList.getCompoundTagAt(i)
+                            .getLong("Cnt")
+                        : item.stackSize;
                 sb.append(item.getDisplayName());
-                if (cnt > 1)
-                    sb.append(" x")
-                            .append(cnt);
+                if (cnt > 1) sb.append(" x")
+                    .append(cnt);
             }
         }
 

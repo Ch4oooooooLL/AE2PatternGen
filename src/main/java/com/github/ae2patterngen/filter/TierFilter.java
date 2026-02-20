@@ -18,8 +18,7 @@ public class TierFilter implements IRecipeFilter {
 
     @Override
     public boolean matches(RecipeEntry recipe) {
-        if (targetTier < 0)
-            return true; // Any
+        if (targetTier < 0) return true; // Any
 
         // 仅保留完全匹配所选电压等级的配方，避免重复生成低等级或无法处理高等级
         return getTier(recipe.euPerTick) == targetTier;

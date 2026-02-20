@@ -8,7 +8,11 @@ import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.event.FMLServerStartingEvent;
 
-@Mod(modid = AE2PatternGen.MODID, name = AE2PatternGen.MODNAME, version = Tags.VERSION, dependencies = "required-after:gregtech;required-after:appliedenergistics2;required-after:NotEnoughItems")
+@Mod(
+    modid = AE2PatternGen.MODID,
+    name = AE2PatternGen.MODNAME,
+    version = Tags.VERSION,
+    dependencies = "required-after:gregtech;required-after:appliedenergistics2;required-after:NotEnoughItems")
 public class AE2PatternGen {
 
     public static final String MODID = "ae2patterngen";
@@ -17,7 +21,9 @@ public class AE2PatternGen {
     @Mod.Instance(MODID)
     public static AE2PatternGen instance;
 
-    @SidedProxy(clientSide = "com.github.ae2patterngen.proxy.ClientProxy", serverSide = "com.github.ae2patterngen.proxy.CommonProxy")
+    @SidedProxy(
+        clientSide = "com.github.ae2patterngen.proxy.ClientProxy",
+        serverSide = "com.github.ae2patterngen.proxy.CommonProxy")
     public static CommonProxy proxy;
 
     @Mod.EventHandler

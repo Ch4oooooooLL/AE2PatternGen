@@ -25,11 +25,10 @@ public class PacketSaveFields implements IMessage {
     private String replacements;
     private int targetTier;
 
-    public PacketSaveFields() {
-    }
+    public PacketSaveFields() {}
 
     public PacketSaveFields(String recipeMap, String outputOre, String inputOre, String ncItem, String blacklistInput,
-            String blacklistOutput, String replacements, int targetTier) {
+        String blacklistOutput, String replacements, int targetTier) {
         this.recipeMap = recipeMap;
         this.outputOre = outputOre;
         this.inputOre = inputOre;
@@ -69,21 +68,20 @@ public class PacketSaveFields implements IMessage {
         @Override
         public IMessage onMessage(PacketSaveFields message, MessageContext ctx) {
             EntityPlayerMP player = ctx.getServerHandler().playerEntity;
-            if (player == null)
-                return null;
+            if (player == null) return null;
             ItemStack held = player.getCurrentEquippedItem();
 
             if (held != null && held.getItem() instanceof ItemPatternGenerator) {
                 ItemPatternGenerator.saveAllFields(
-                        held,
-                        message.recipeMap,
-                        message.outputOre,
-                        message.inputOre,
-                        message.ncItem,
-                        message.blacklistInput,
-                        message.blacklistOutput,
-                        message.replacements,
-                        message.targetTier);
+                    held,
+                    message.recipeMap,
+                    message.outputOre,
+                    message.inputOre,
+                    message.ncItem,
+                    message.blacklistInput,
+                    message.blacklistOutput,
+                    message.replacements,
+                    message.targetTier);
             }
 
             return null;

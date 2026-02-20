@@ -16,11 +16,12 @@ import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.IIcon;
 import net.minecraft.world.World;
 
+import org.lwjgl.input.Keyboard;
+
 import com.github.ae2patterngen.storage.PatternStorage;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
-import org.lwjgl.input.Keyboard;
 
 /**
  * 样板生成器物品 — 三种交互模式:
@@ -72,15 +73,17 @@ public class ItemPatternGenerator extends Item {
         if (!world.isRemote) {
             int guiId = player.isSneaking() ? GUI_ID_STORAGE : GUI_ID;
             cpw.mods.fml.common.FMLLog.info(
-                    "[AE2PatternGen] SERVER SIDE: Requesting to open GUI %d for player %s with instance %s", guiId,
-                    player.getCommandSenderName(), com.github.ae2patterngen.AE2PatternGen.instance);
+                "[AE2PatternGen] SERVER SIDE: Requesting to open GUI %d for player %s with instance %s",
+                guiId,
+                player.getCommandSenderName(),
+                com.github.ae2patterngen.AE2PatternGen.instance);
             player.openGui(
-                    com.github.ae2patterngen.AE2PatternGen.instance,
-                    guiId,
-                    world,
-                    (int) player.posX,
-                    (int) player.posY,
-                    (int) player.posZ);
+                com.github.ae2patterngen.AE2PatternGen.instance,
+                guiId,
+                world,
+                (int) player.posX,
+                (int) player.posY,
+                (int) player.posZ);
         }
         return stack;
     }
@@ -90,11 +93,9 @@ public class ItemPatternGenerator extends Item {
      */
     @Override
     public boolean onItemUseFirst(ItemStack stack, EntityPlayer player, World world, int x, int y, int z, int side,
-            float hitX, float hitY, float hitZ) {
-        if (world.isRemote)
-            return false;
-        if (!player.isSneaking())
-            return false;
+        float hitX, float hitY, float hitZ) {
+        if (world.isRemote) return false;
+        if (!player.isSneaking()) return false;
 
         TileEntity te = world.getTileEntity(x, y, z);
         if (!(te instanceof IInventory)) {
@@ -156,73 +157,104 @@ public class ItemPatternGenerator extends Item {
     @SideOnly(Side.CLIENT)
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public void addInformation(ItemStack stack, EntityPlayer player, List list, boolean advanced) {
-        if (Keyboard.isKeyDown(Keyboard.KEY_LSHIFT)
-                || Keyboard.isKeyDown(Keyboard.KEY_RSHIFT)) {
+        if (Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) || Keyboard.isKeyDown(Keyboard.KEY_RSHIFT)) {
             list.add(EnumChatFormatting.YELLOW + "[\u529F\u80FD]"); // [功能]
-            list.add(EnumChatFormatting.GRAY + "1. " + EnumChatFormatting.WHITE + "\u6279\u91CF\u751F\u6210"
+            list.add(
+                EnumChatFormatting.GRAY + "1. "
+                    + EnumChatFormatting.WHITE
+                    + "\u6279\u91CF\u751F\u6210"
                     + EnumChatFormatting.GRAY
                     + ": \u8F93\u5165 ID \u5339\u914D\u5E76\u6279\u91CF\u751F\u6210\u914D\u65B9\u6837\u677F");
-            list.add(EnumChatFormatting.GRAY + "2. " + EnumChatFormatting.WHITE + "\u667A\u80FD\u8FC7\u6EE4"
-                    + EnumChatFormatting.GRAY + ": \u652F\u6301\u6B63\u5219\u7B5B\u9009\u4E0E\u9ED1\u540D\u5355");
-            list.add(EnumChatFormatting.GRAY + "3. " + EnumChatFormatting.WHITE + "\u865A\u62DF\u4ED3\u50A8"
+            list.add(
+                EnumChatFormatting.GRAY + "2. "
+                    + EnumChatFormatting.WHITE
+                    + "\u667A\u80FD\u8FC7\u6EE4"
+                    + EnumChatFormatting.GRAY
+                    + ": \u652F\u6301\u6B63\u5219\u7B5B\u9009\u4E0E\u9ED1\u540D\u5355");
+            list.add(
+                EnumChatFormatting.GRAY + "3. "
+                    + EnumChatFormatting.WHITE
+                    + "\u865A\u62DF\u4ED3\u50A8"
                     + EnumChatFormatting.GRAY
                     + ": \u7ED3\u679C\u5B58\u5165\u5185\u7F6E\u786C\u76D8\uFF0C\u4E0D\u5360\u80CC\u5305");
-            list.add(EnumChatFormatting.GRAY + "4. " + EnumChatFormatting.WHITE + "\u81EA\u52A8\u66FF\u6362"
-                    + EnumChatFormatting.GRAY + ": \u652F\u6301\u914D\u7F6E\u77FF\u8F9E\u66FF\u6362\u89C4\u5219");
-            list.add(EnumChatFormatting.GRAY + "5. " + EnumChatFormatting.WHITE + "\u7B49\u4EF7\u6D88\u8017"
+            list.add(
+                EnumChatFormatting.GRAY + "4. "
+                    + EnumChatFormatting.WHITE
+                    + "\u81EA\u52A8\u66FF\u6362"
+                    + EnumChatFormatting.GRAY
+                    + ": \u652F\u6301\u914D\u7F6E\u77FF\u8F9E\u66FF\u6362\u89C4\u5219");
+            list.add(
+                EnumChatFormatting.GRAY + "5. "
+                    + EnumChatFormatting.WHITE
+                    + "\u7B49\u4EF7\u6D88\u8017"
                     + EnumChatFormatting.GRAY
                     + ": \u751F\u6210\u65F6\u9700\u6D88\u8017\u80CC\u5305\u5185\u7684\u7A7A\u767D\u6837\u677F");
             list.add("");
             list.add(EnumChatFormatting.YELLOW + "[\u64CD\u4F5C]"); // [操作]
-            list.add(EnumChatFormatting.GRAY + "- " + EnumChatFormatting.WHITE
-                    + "\u53F3\u952E (\u5BF9\u7740\u7A7A\u6C14)" + EnumChatFormatting.GRAY
+            list.add(
+                EnumChatFormatting.GRAY + "- "
+                    + EnumChatFormatting.WHITE
+                    + "\u53F3\u952E (\u5BF9\u7740\u7A7A\u6C14)"
+                    + EnumChatFormatting.GRAY
                     + ": \u6253\u5F00\u751F\u6210\u914D\u7F6E\u754C\u9762");
-            list.add(EnumChatFormatting.GRAY + "- " + EnumChatFormatting.WHITE
-                    + "Shift+\u53F3\u952E (\u5BF9\u7740\u7A7A\u6C14)" + EnumChatFormatting.GRAY
+            list.add(
+                EnumChatFormatting.GRAY + "- "
+                    + EnumChatFormatting.WHITE
+                    + "Shift+\u53F3\u952E (\u5BF9\u7740\u7A7A\u6C14)"
+                    + EnumChatFormatting.GRAY
                     + ": \u6253\u5F00\u6837\u677F\u4ED3\u50A8\u754C\u9762");
-            list.add(EnumChatFormatting.GRAY + "- " + EnumChatFormatting.WHITE
-                    + "Shift+\u53F3\u952E (\u5BF9\u7740\u5BB9\u5668)" + EnumChatFormatting.GRAY
+            list.add(
+                EnumChatFormatting.GRAY + "- "
+                    + EnumChatFormatting.WHITE
+                    + "Shift+\u53F3\u952E (\u5BF9\u7740\u5BB9\u5668)"
+                    + EnumChatFormatting.GRAY
                     + ": \u5BFC\u51FA\u6837\u677F\u5230\u8BE5\u5BB9\u5668");
         } else {
             list.add(EnumChatFormatting.GRAY + "\u53F3\u952E\u6253\u5F00\u751F\u6210\u5668 GUI");
-            list.add(EnumChatFormatting.GRAY + "\u6309\u4F4F " + EnumChatFormatting.AQUA + "Shift"
-                    + EnumChatFormatting.GRAY + " \u67E5\u770B\u8BE6\u7EC6\u529F\u80FD");
+            list.add(
+                EnumChatFormatting.GRAY + "\u6309\u4F4F "
+                    + EnumChatFormatting.AQUA
+                    + "Shift"
+                    + EnumChatFormatting.GRAY
+                    + " \u67E5\u770B\u8BE6\u7EC6\u529F\u80FD");
         }
     }
 
     public static String getSavedField(ItemStack stack, String key) {
-        if (stack == null || !stack.hasTagCompound())
-            return "";
+        if (stack == null || !stack.hasTagCompound()) return "";
         NBTTagCompound tag = stack.getTagCompound();
         return tag.hasKey(key) ? tag.getString(key) : "";
     }
 
     public static void saveField(ItemStack stack, String key, String value) {
-        if (stack == null)
-            return;
+        if (stack == null) return;
         if (!stack.hasTagCompound()) {
             stack.setTagCompound(new NBTTagCompound());
         }
-        stack.getTagCompound().setString(key, value != null ? value : "");
+        stack.getTagCompound()
+            .setString(key, value != null ? value : "");
     }
 
     public static int getSavedInt(ItemStack stack, String key, int def) {
-        if (stack == null || !stack.hasTagCompound())
-            return def;
-        return stack.getTagCompound().hasKey(key) ? stack.getTagCompound().getInteger(key) : def;
+        if (stack == null || !stack.hasTagCompound()) return def;
+        return stack.getTagCompound()
+            .hasKey(key)
+                ? stack.getTagCompound()
+                    .getInteger(key)
+                : def;
     }
 
     public static void saveInt(ItemStack stack, String key, int value) {
-        if (stack == null)
-            return;
+        if (stack == null) return;
         if (!stack.hasTagCompound()) {
             stack.setTagCompound(new NBTTagCompound());
         }
-        stack.getTagCompound().setInteger(key, value);
+        stack.getTagCompound()
+            .setInteger(key, value);
     }
 
     public static void saveAllFields(ItemStack stack, String recipeMap, String outputOre, String inputOre,
-            String ncItem, String blacklistInput, String blacklistOutput, String replacements, int targetTier) {
+        String ncItem, String blacklistInput, String blacklistOutput, String replacements, int targetTier) {
         saveField(stack, NBT_RECIPE_MAP, recipeMap);
         saveField(stack, NBT_OUTPUT_ORE, outputOre);
         saveField(stack, NBT_INPUT_ORE, inputOre);

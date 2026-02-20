@@ -12,14 +12,13 @@ public class InventoryUtil {
      * 计算玩家背包中特定物品的数量
      */
     public static int countItem(EntityPlayer player, ItemStack target) {
-        if (player == null || target == null || target.getItem() == null)
-            return 0;
+        if (player == null || target == null || target.getItem() == null) return 0;
         int count = 0;
         IInventory inv = player.inventory;
         for (int i = 0; i < inv.getSizeInventory(); i++) {
             ItemStack stack = inv.getStackInSlot(i);
             if (stack != null && stack.getItem() == target.getItem()
-                    && stack.getItemDamage() == target.getItemDamage()) {
+                && stack.getItemDamage() == target.getItemDamage()) {
                 count += stack.stackSize;
             }
         }
@@ -32,19 +31,17 @@ public class InventoryUtil {
      * @return 如果扣除成功（数量足够）返回 true；如果失败（数量不足）不会扣除任何物品，返回 false。
      */
     public static boolean consumeItem(EntityPlayer player, ItemStack target, int amount) {
-        if (countItem(player, target) < amount)
-            return false;
+        if (countItem(player, target) < amount) return false;
 
         int remainToConsume = amount;
         IInventory inv = player.inventory;
 
         for (int i = 0; i < inv.getSizeInventory(); i++) {
-            if (remainToConsume <= 0)
-                break;
+            if (remainToConsume <= 0) break;
 
             ItemStack stack = inv.getStackInSlot(i);
             if (stack != null && stack.getItem() == target.getItem()
-                    && stack.getItemDamage() == target.getItemDamage()) {
+                && stack.getItemDamage() == target.getItemDamage()) {
                 if (stack.stackSize <= remainToConsume) {
                     remainToConsume -= stack.stackSize;
                     inv.setInventorySlotContents(i, null);
