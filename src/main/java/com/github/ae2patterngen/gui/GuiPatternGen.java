@@ -27,7 +27,7 @@ public class GuiPatternGen extends GuiContainer {
 
     // ---- 尺寸常量 ----
     private static final int GUI_W = 260;
-    private static final int GUI_H = 310;
+    private static final int GUI_H = 315;
 
     // ---- 调色板 ----
     private static final int COL_PANEL_BG = 0xF0181825; // 主面板深蓝灰背景
@@ -60,14 +60,19 @@ public class GuiPatternGen extends GuiContainer {
     private GuiTextField fieldNCItem;
     private GuiTextField fieldBlacklistInput;
     private GuiTextField fieldBlacklistOutput;
-    private GuiTextField fieldReplacements;
+
+    private GuiComboBox comboTier;
+    private static final java.util.List<String> TIER_OPTIONS = java.util.Arrays.asList(
+            "Any", "ULV", "LV", "MV", "HV", "EV", "IV", "LuV", "ZPM", "UV", "MAX");
 
     private GuiButton btnList;
     private GuiButton btnPreview;
     private GuiButton btnGenerate;
+    private GuiButton btnOpenConfig;
 
     private String statusMessage = "\u00A77\u25CF \u5c31\u7eea"; // ● 就绪
     private final ContainerPatternGen container;
+    private int loadedRuleCount = 0;
 
     public GuiPatternGen(ContainerPatternGen container) {
         super(container);
@@ -84,6 +89,10 @@ public class GuiPatternGen extends GuiContainer {
         super.initGui();
         Keyboard.enableRepeatEvents(true);
 
+        // 加载矿辞替换规则配置
+        this.loadedRuleCount = com.github.ae2patterngen.config.ReplacementConfig.load();
+        this.statusMessage = "\u00A77\u25CF \u5DF2\u52A0\u8F7D " + loadedRuleCount + " \u6761\u66FF\u6362\u89C4\u5219";
+
         ItemStack held = container.heldItem;
 
         // ---- 标题栏: 20px ----
@@ -97,11 +106,11 @@ public class GuiPatternGen extends GuiContainer {
         // ---- 卡片 1: 配方设置 (单行，全宽输入框) ----
         y += 14; // 分组标题行
         fieldRecipeMap = createField(
-            contentLeft + CARD_PAD,
-            y,
-            fullFieldW,
-            FIELD_H,
-            ItemPatternGenerator.getSavedField(held, ItemPatternGenerator.NBT_RECIPE_MAP));
+                contentLeft + CARD_PAD,
+                y,
+                fullFieldW,
+                FIELD_H,
+                ItemPatternGenerator.getSavedField(held, ItemPatternGenerator.NBT_RECIPE_MAP));
         y += FIELD_H + CARD_PAD;
         y += 4; // 卡片间距
 
@@ -110,27 +119,34 @@ public class GuiPatternGen extends GuiContainer {
         int inputX = contentLeft + CARD_PAD + LABEL_W;
 
         fieldOutputOreDict = createField(
-            inputX,
-            y,
-            fieldW,
-            FIELD_H,
-            ItemPatternGenerator.getSavedField(held, ItemPatternGenerator.NBT_OUTPUT_ORE));
+                inputX,
+                y,
+                fieldW,
+                FIELD_H,
+                ItemPatternGenerator.getSavedField(held, ItemPatternGenerator.NBT_OUTPUT_ORE));
         y += FIELD_H + 4;
 
         fieldInputOreDict = createField(
-            inputX,
-            y,
-            fieldW,
-            FIELD_H,
-            ItemPatternGenerator.getSavedField(held, ItemPatternGenerator.NBT_INPUT_ORE));
+                inputX,
+                y,
+                fieldW,
+                FIELD_H,
+                ItemPatternGenerator.getSavedField(held, ItemPatternGenerator.NBT_INPUT_ORE));
         y += FIELD_H + 4;
 
         fieldNCItem = createField(
-            inputX,
-            y,
-            fieldW,
-            FIELD_H,
-            ItemPatternGenerator.getSavedField(held, ItemPatternGenerator.NBT_NC_ITEM));
+                inputX,
+                y,
+                fieldW,
+                FIELD_H,
+                ItemPatternGenerator.getSavedField(held, ItemPatternGenerator.NBT_NC_ITEM));
+        y += FIELD_H + 4;
+
+        // Tier Dropdown
+        int savedTier = ItemPatternGenerator.getSavedInt(held, ItemPatternGenerator.NBT_TARGET_TIER, -1);
+        comboTier = new GuiComboBox(inputX, y, fieldW, FIELD_H, TIER_OPTIONS);
+        comboTier.setSelectedIndex(savedTier + 1); // -1 -> 0 (Any), 0 -> 1 (ULV)
+
         y += FIELD_H + CARD_PAD;
         y += 4;
 
@@ -138,32 +154,39 @@ public class GuiPatternGen extends GuiContainer {
         y += 14;
 
         fieldBlacklistInput = createField(
-            inputX,
-            y,
-            fieldW,
-            FIELD_H,
-            ItemPatternGenerator.getSavedField(held, ItemPatternGenerator.NBT_BLACKLIST_INPUT));
+                inputX,
+                y,
+                fieldW,
+                FIELD_H,
+                ItemPatternGenerator.getSavedField(held, ItemPatternGenerator.NBT_BLACKLIST_INPUT));
         y += FIELD_H + 4;
 
         fieldBlacklistOutput = createField(
-            inputX,
-            y,
-            fieldW,
-            FIELD_H,
-            ItemPatternGenerator.getSavedField(held, ItemPatternGenerator.NBT_BLACKLIST_OUTPUT));
+                inputX,
+                y,
+                fieldW,
+                FIELD_H,
+                ItemPatternGenerator.getSavedField(held, ItemPatternGenerator.NBT_BLACKLIST_OUTPUT));
         y += FIELD_H + CARD_PAD;
         y += 4;
 
         // ---- 卡片 4: 替换规则 (1 行, 全宽) ----
         y += 14;
 
-        fieldReplacements = createField(
-            contentLeft + CARD_PAD,
-            y,
-            fullFieldW,
-            FIELD_H,
-            ItemPatternGenerator.getSavedField(held, ItemPatternGenerator.NBT_REPLACEMENTS));
-        y += FIELD_H + CARD_PAD;
+        // ---- 卡片 4: 替换规则 (信息显示 + 按钮) ----
+        y += 14;
+
+        int configBtnW = 80;
+        int configBtnH = 16;
+        btnOpenConfig = new GuiButton(
+                3,
+                contentLeft + GUI_W - PAD * 2 - CARD_PAD - configBtnW,
+                y,
+                configBtnW,
+                configBtnH,
+                "\u6253\u5F00\u914D\u7F6E");
+
+        y += 20 + CARD_PAD;
         y += 8;
 
         // ---- 按钮行 ----
@@ -179,6 +202,7 @@ public class GuiPatternGen extends GuiContainer {
         buttonList.add(btnList);
         buttonList.add(btnPreview);
         buttonList.add(btnGenerate);
+        buttonList.add(btnOpenConfig);
     }
 
     private GuiTextField createField(int x, int y, int w, int h, String initText) {
@@ -206,9 +230,6 @@ public class GuiPatternGen extends GuiContainer {
         // ---- 3. 标题栏 ----
         int titleY = guiTop + 6;
         fontRendererObj.drawStringWithShadow("\u25B8 AE2 Pattern Generator", guiLeft + PAD + 2, titleY, COL_TITLE_TEXT);
-        String version = EnumChatFormatting.DARK_GRAY + "v1.3";
-        int versionW = fontRendererObj.getStringWidth(version);
-        fontRendererObj.drawStringWithShadow(version, guiLeft + GUI_W - PAD - versionW - 2, titleY, 0x666666);
 
         // 标题下分隔线
         drawRect(guiLeft + PAD, guiTop + 18, guiLeft + GUI_W - PAD, guiTop + 19, COL_BORDER_GLOW);
@@ -222,16 +243,18 @@ public class GuiPatternGen extends GuiContainer {
         int card1H = 14 + FIELD_H + CARD_PAD;
         drawCard(contentLeft, y, GUI_W - PAD * 2, card1H);
         fontRendererObj
-            .drawStringWithShadow("\u00A7r\u914D\u65B9\u8BBE\u7F6E", contentLeft + CARD_PAD, y + 3, COL_SECTION_TEXT);
+                .drawStringWithShadow("\u00A7r\u914D\u65B9\u8BBE\u7F6E", contentLeft + CARD_PAD, y + 3,
+                        COL_SECTION_TEXT);
         y += 14;
         drawInputBg(fieldRecipeMap);
         y += FIELD_H + CARD_PAD + 4;
 
         // -- 卡片 2: 过滤器 --
-        int card2H = 14 + (FIELD_H + 4) * 3 - 4 + CARD_PAD;
+        // 原有 3 行 + 新增 1 行
+        int card2H = 14 + (FIELD_H + 4) * 4 - 4 + CARD_PAD;
         drawCard(contentLeft, y, GUI_W - PAD * 2, card2H);
         fontRendererObj
-            .drawStringWithShadow("\u00A7r\u8FC7\u6EE4\u5668", contentLeft + CARD_PAD, y + 3, COL_SECTION_TEXT);
+                .drawStringWithShadow("\u00A7r\u8FC7\u6EE4\u5668", contentLeft + CARD_PAD, y + 3, COL_SECTION_TEXT);
         y += 14;
 
         drawLabelAndInputBg("\u8F93\u51FA\u77FF\u8F9E:", contentLeft + CARD_PAD, y, fieldOutputOreDict);
@@ -239,13 +262,20 @@ public class GuiPatternGen extends GuiContainer {
         drawLabelAndInputBg("\u8F93\u5165\u77FF\u8F9E:", contentLeft + CARD_PAD, y, fieldInputOreDict);
         y += FIELD_H + 4;
         drawLabelAndInputBg("NC \u7269\u54C1:", contentLeft + CARD_PAD, y, fieldNCItem);
+        y += FIELD_H + 4;
+
+        // Draw Label for Tier
+        fontRendererObj.drawStringWithShadow("\u7535\u538B\u7B49\u7EA7:", contentLeft + CARD_PAD, y + 3,
+                COL_LABEL_TEXT);
+        // ComboBox drawn later to overlay
+
         y += FIELD_H + CARD_PAD + 4;
 
         // -- 卡片 3: 黑名单 --
         int card3H = 14 + (FIELD_H + 4) * 2 - 4 + CARD_PAD;
         drawCard(contentLeft, y, GUI_W - PAD * 2, card3H);
         fontRendererObj
-            .drawStringWithShadow("\u00A7r\u9ED1\u540D\u5355", contentLeft + CARD_PAD, y + 3, COL_SECTION_TEXT);
+                .drawStringWithShadow("\u00A7r\u9ED1\u540D\u5355", contentLeft + CARD_PAD, y + 3, COL_SECTION_TEXT);
         y += 14;
 
         drawLabelAndInputBg("\u8F93\u5165\u6392\u9664:", contentLeft + CARD_PAD, y, fieldBlacklistInput);
@@ -254,16 +284,19 @@ public class GuiPatternGen extends GuiContainer {
         y += FIELD_H + CARD_PAD + 4;
 
         // -- 卡片 4: 替换规则 --
-        int card4H = 14 + FIELD_H + CARD_PAD;
+        // -- 卡片 4: 替换规则 --
+        int card4H = 14 + 20 + CARD_PAD;
         drawCard(contentLeft, y, GUI_W - PAD * 2, card4H);
-        fontRendererObj.drawStringWithShadow(
-            "\u00A7r\u66FF\u6362\u89C4\u5219 " + EnumChatFormatting.DARK_GRAY
-                + "(\u6E90\u77FF\u8F9E=\u76EE\u6807\u77FF\u8F9E;\u2026)",
-            contentLeft + CARD_PAD,
-            y + 3,
-            COL_SECTION_TEXT);
-        y += 14;
-        drawInputBg(fieldReplacements);
+        fontRendererObj
+                .drawStringWithShadow("\u00A7r\u66FF\u6362\u89C4\u5219", contentLeft + CARD_PAD, y + 3,
+                        COL_SECTION_TEXT);
+
+        // 显示规则统计
+        String ruleInfo = "\u00A77\u5DF2\u52A0\u8F7D: \u00A7f" + loadedRuleCount + " \u00A77\u6761";
+        fontRendererObj.drawStringWithShadow(ruleInfo, contentLeft + CARD_PAD, y + 14 + 5, COL_LABEL_TEXT);
+
+        // 按钮在 initGui 已定位，这里只需要绘制
+        drawModernButton(btnOpenConfig, mouseX, mouseY, false);
 
         // ---- 5. 自定义按钮绘制 ----
         drawModernButton(btnList, mouseX, mouseY, false);
@@ -308,8 +341,8 @@ public class GuiPatternGen extends GuiContainer {
 
     private void drawModernButton(GuiButton btn, int mouseX, int mouseY, boolean accent) {
         boolean hovered = mouseX >= btn.xPosition && mouseX < btn.xPosition + btn.width
-            && mouseY >= btn.yPosition
-            && mouseY < btn.yPosition + btn.height;
+                && mouseY >= btn.yPosition
+                && mouseY < btn.yPosition + btn.height;
 
         int bgColor;
         if (accent) {
@@ -345,7 +378,9 @@ public class GuiPatternGen extends GuiContainer {
         fieldNCItem.drawTextBox();
         fieldBlacklistInput.drawTextBox();
         fieldBlacklistOutput.drawTextBox();
-        fieldReplacements.drawTextBox();
+
+        // Draw ComboBox last
+        comboTier.drawComboBox(mc, mouseX, mouseY);
     }
 
     // ==================================================================
@@ -360,14 +395,16 @@ public class GuiPatternGen extends GuiContainer {
 
     private void saveFields() {
         NetworkHandler.sendSaveFieldsToServer(
-            new PacketSaveFields(
-                fieldRecipeMap.getText(),
-                fieldOutputOreDict.getText(),
-                fieldInputOreDict.getText(),
-                fieldNCItem.getText(),
-                fieldBlacklistInput.getText(),
-                fieldBlacklistOutput.getText(),
-                fieldReplacements.getText()));
+                new PacketSaveFields(
+                        fieldRecipeMap.getText(),
+                        fieldOutputOreDict.getText(),
+                        fieldInputOreDict.getText(),
+                        fieldNCItem.getText(),
+                        fieldBlacklistInput.getText(),
+                        fieldBlacklistOutput.getText(),
+                        "", // replacements (managed by server config)
+                        comboTier.getSelectedIndex() - 1 // Index 0 (Any) -> -1
+                ));
     }
 
     @Override
@@ -377,6 +414,8 @@ public class GuiPatternGen extends GuiContainer {
 
     @Override
     protected void mouseClicked(int mouseX, int mouseY, int mouseButton) {
+        if (comboTier.mouseClicked(mouseX, mouseY, mouseButton))
+            return; // Handle combo click first
         super.mouseClicked(mouseX, mouseY, mouseButton);
 
         // 手动按钮点击检测
@@ -386,6 +425,13 @@ public class GuiPatternGen extends GuiContainer {
             handlePreview();
         } else if (isMouseOver(btnGenerate, mouseX, mouseY)) {
             handleGenerate();
+        } else if (isMouseOver(btnOpenConfig, mouseX, mouseY)) {
+            try {
+                java.awt.Desktop.getDesktop()
+                        .open(com.github.ae2patterngen.config.ReplacementConfig.getConfigFile());
+            } catch (Exception e) {
+                statusMessage = EnumChatFormatting.RED + "\u6253\u5F00\u5931\u8D25: " + e.getMessage();
+            }
         }
 
         fieldRecipeMap.mouseClicked(mouseX, mouseY, mouseButton);
@@ -394,13 +440,12 @@ public class GuiPatternGen extends GuiContainer {
         fieldNCItem.mouseClicked(mouseX, mouseY, mouseButton);
         fieldBlacklistInput.mouseClicked(mouseX, mouseY, mouseButton);
         fieldBlacklistOutput.mouseClicked(mouseX, mouseY, mouseButton);
-        fieldReplacements.mouseClicked(mouseX, mouseY, mouseButton);
     }
 
     private boolean isMouseOver(GuiButton btn, int mx, int my) {
         return mx >= btn.xPosition && mx < btn.xPosition + btn.width
-            && my >= btn.yPosition
-            && my < btn.yPosition + btn.height;
+                && my >= btn.yPosition
+                && my < btn.yPosition + btn.height;
     }
 
     private void handleList() {
@@ -415,31 +460,31 @@ public class GuiPatternGen extends GuiContainer {
 
     private void handleGenerate() {
         if (fieldRecipeMap.getText()
-            .isEmpty()) {
+                .isEmpty()) {
             statusMessage = EnumChatFormatting.RED + "\u25CF \u9519\u8BEF: \u914D\u65B9\u8868\u4E0D\u53EF\u4E3A\u7A7A";
             return;
         }
         NetworkHandler.sendToServer(
-            new PacketGeneratePatterns(
-                fieldRecipeMap.getText(),
-                fieldOutputOreDict.getText(),
-                fieldInputOreDict.getText(),
-                fieldNCItem.getText(),
-                fieldBlacklistInput.getText(),
-                fieldBlacklistOutput.getText(),
-                fieldReplacements.getText()));
+                new PacketGeneratePatterns(
+                        fieldRecipeMap.getText(),
+                        fieldOutputOreDict.getText(),
+                        fieldInputOreDict.getText(),
+                        fieldNCItem.getText(),
+                        fieldBlacklistInput.getText(),
+                        fieldBlacklistOutput.getText(),
+                        "", // replacements (server config)
+                        comboTier.getSelectedIndex() - 1));
         statusMessage = EnumChatFormatting.YELLOW
-            + "\u25CF \u5DF2\u5411\u670D\u52A1\u7AEF\u8BF7\u6C42\u751F\u6210\u6837\u677F";
+                + "\u25CF \u5DF2\u5411\u670D\u52A1\u7AEF\u8BF7\u6C42\u751F\u6210\u6837\u677F";
     }
 
     @Override
     protected void keyTyped(char c, int keyCode) {
         if (fieldRecipeMap.textboxKeyTyped(c, keyCode) || fieldOutputOreDict.textboxKeyTyped(c, keyCode)
-            || fieldInputOreDict.textboxKeyTyped(c, keyCode)
-            || fieldNCItem.textboxKeyTyped(c, keyCode)
-            || fieldBlacklistInput.textboxKeyTyped(c, keyCode)
-            || fieldBlacklistOutput.textboxKeyTyped(c, keyCode)
-            || fieldReplacements.textboxKeyTyped(c, keyCode)) {
+                || fieldInputOreDict.textboxKeyTyped(c, keyCode)
+                || fieldNCItem.textboxKeyTyped(c, keyCode)
+                || fieldBlacklistInput.textboxKeyTyped(c, keyCode)
+                || fieldBlacklistOutput.textboxKeyTyped(c, keyCode)) {
             return;
         }
         super.keyTyped(c, keyCode);
@@ -454,6 +499,6 @@ public class GuiPatternGen extends GuiContainer {
         fieldNCItem.updateCursorCounter();
         fieldBlacklistInput.updateCursorCounter();
         fieldBlacklistOutput.updateCursorCounter();
-        fieldReplacements.updateCursorCounter();
+
     }
 }

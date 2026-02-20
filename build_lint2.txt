@@ -1,0 +1,19 @@
+
+> Configure project :
+You might want to check out './gradlew :faq' if your build fails.
+Build script update from 1.0.40 to 1.0.50 available! Run ./gradlew updateBuildScript
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Problem configuring task :compileJava from command line.
+> Unknown command-line option '-X'.
+
+* Try:
+> Run gradlew help --task :compileJava to get task usage details.
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 2s

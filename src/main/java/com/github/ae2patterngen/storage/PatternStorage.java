@@ -37,13 +37,14 @@ public class PatternStorage {
         try {
             File file = getStorageFile(playerUUID);
             file.getParentFile()
-                .mkdirs();
+                    .mkdirs();
 
             NBTTagCompound root = new NBTTagCompound();
             NBTTagList list = new NBTTagList();
 
             for (ItemStack stack : patterns) {
-                if (stack == null) continue;
+                if (stack == null)
+                    continue;
                 NBTTagCompound tag = new NBTTagCompound();
                 stack.writeToNBT(tag);
                 list.appendTag(tag);
@@ -67,7 +68,8 @@ public class PatternStorage {
         List<ItemStack> patterns = new ArrayList<>();
         try {
             File file = getStorageFile(playerUUID);
-            if (!file.exists()) return patterns;
+            if (!file.exists())
+                return patterns;
 
             NBTTagCompound root = CompressedStreamTools.readCompressed(new FileInputStream(file));
             NBTTagList list = root.getTagList(KEY_PATTERNS, 10); // 10 = NBTTagCompound
@@ -90,23 +92,25 @@ public class PatternStorage {
     public static StorageSummary getSummary(UUID playerUUID) {
         try {
             File file = getStorageFile(playerUUID);
-            if (!file.exists()) return StorageSummary.EMPTY;
+            if (!file.exists())
+                return StorageSummary.EMPTY;
 
             NBTTagCompound root = CompressedStreamTools.readCompressed(new FileInputStream(file));
             int count = root.getInteger(KEY_COUNT);
             String source = root.getString(KEY_SOURCE);
             long timestamp = root.getLong(KEY_TIMESTAMP);
 
-            if (count == 0) return StorageSummary.EMPTY;
+            if (count == 0)
+                return StorageSummary.EMPTY;
 
-            // 加载前几条作为预览
+            // 加载前几条作为预览 (解析产物名)
             List<String> previews = new ArrayList<>();
             NBTTagList list = root.getTagList(KEY_PATTERNS, 10);
-            int previewCount = Math.min(8, list.tagCount());
+            int previewCount = list.tagCount();
             for (int i = 0; i < previewCount; i++) {
                 ItemStack stack = ItemStack.loadItemStackFromNBT(list.getCompoundTagAt(i));
                 if (stack != null) {
-                    previews.add(stack.getDisplayName());
+                    previews.add(extractOutputSummary(stack));
                 }
             }
 
@@ -167,7 +171,8 @@ public class PatternStorage {
      */
     public static ItemStack delete(UUID playerUUID, int index) {
         List<ItemStack> all = load(playerUUID);
-        if (index < 0 || index >= all.size()) return null;
+        if (index < 0 || index >= all.size())
+            return null;
 
         ItemStack removed = all.remove(index);
 
@@ -191,14 +196,16 @@ public class PatternStorage {
     public static StorageSummary getPage(UUID playerUUID, int page, int pageSize) {
         try {
             File file = getStorageFile(playerUUID);
-            if (!file.exists()) return StorageSummary.EMPTY;
+            if (!file.exists())
+                return StorageSummary.EMPTY;
 
             NBTTagCompound root = CompressedStreamTools.readCompressed(new FileInputStream(file));
             int count = root.getInteger(KEY_COUNT);
             String source = root.getString(KEY_SOURCE);
             long timestamp = root.getLong(KEY_TIMESTAMP);
 
-            if (count == 0) return StorageSummary.EMPTY;
+            if (count == 0)
+                return StorageSummary.EMPTY;
 
             NBTTagList list = root.getTagList(KEY_PATTERNS, 10);
             int start = page * pageSize;
@@ -208,7 +215,7 @@ public class PatternStorage {
             for (int i = start; i < end; i++) {
                 ItemStack stack = ItemStack.loadItemStackFromNBT(list.getCompoundTagAt(i));
                 if (stack != null) {
-                    previews.add(stack.getDisplayName());
+                    previews.add(extractOutputSummary(stack));
                 }
             }
 
@@ -217,6 +224,87 @@ public class PatternStorage {
             System.err.println("[AE2PatternGen] Failed to read storage page: " + e.getMessage());
             return StorageSummary.EMPTY;
         }
+    }
+
+    /**
+     * 获取指定索引的样板详情 (输入/输出物品名列表)
+     */
+    public static PatternDetail getPatternDetail(UUID playerUUID, int index) {
+        List<ItemStack> all = load(playerUUID);
+        if (index < 0 || index >= all.size())
+            return null;
+
+        ItemStack pattern = all.get(index);
+        List<String> inputs = new ArrayList<>();
+        List<String> outputs = new ArrayList<>();
+
+        if (pattern.hasTagCompound()) {
+            NBTTagCompound tag = pattern.getTagCompound();
+
+            NBTTagList inList = tag.getTagList("in", 10);
+            for (int i = 0; i < inList.tagCount(); i++) {
+                ItemStack item = ItemStack.loadItemStackFromNBT(inList.getCompoundTagAt(i));
+                if (item != null) {
+                    long cnt = inList.getCompoundTagAt(i)
+                            .hasKey("Cnt")
+                                    ? inList.getCompoundTagAt(i)
+                                            .getLong("Cnt")
+                                    : item.stackSize;
+                    inputs.add(item.getDisplayName() + " x" + cnt);
+                }
+            }
+
+            NBTTagList outList = tag.getTagList("out", 10);
+            for (int i = 0; i < outList.tagCount(); i++) {
+                ItemStack item = ItemStack.loadItemStackFromNBT(outList.getCompoundTagAt(i));
+                if (item != null) {
+                    long cnt = outList.getCompoundTagAt(i)
+                            .hasKey("Cnt")
+                                    ? outList.getCompoundTagAt(i)
+                                            .getLong("Cnt")
+                                    : item.stackSize;
+                    outputs.add(item.getDisplayName() + " x" + cnt);
+                }
+            }
+        }
+
+        return new PatternDetail(inputs, outputs);
+    }
+
+    /**
+     * 从样板 ItemStack 的 NBT "out" 标签提取产物摘要
+     */
+    private static String extractOutputSummary(ItemStack pattern) {
+        if (pattern == null || !pattern.hasTagCompound()) {
+            return pattern != null ? pattern.getDisplayName() : "?";
+        }
+
+        NBTTagCompound tag = pattern.getTagCompound();
+        NBTTagList outList = tag.getTagList("out", 10);
+
+        if (outList.tagCount() == 0) {
+            return pattern.getDisplayName();
+        }
+
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < outList.tagCount(); i++) {
+            ItemStack item = ItemStack.loadItemStackFromNBT(outList.getCompoundTagAt(i));
+            if (item != null) {
+                if (sb.length() > 0)
+                    sb.append(", ");
+                long cnt = outList.getCompoundTagAt(i)
+                        .hasKey("Cnt")
+                                ? outList.getCompoundTagAt(i)
+                                        .getLong("Cnt")
+                                : item.stackSize;
+                sb.append(item.getDisplayName());
+                if (cnt > 1)
+                    sb.append(" x")
+                            .append(cnt);
+            }
+        }
+
+        return sb.length() > 0 ? sb.toString() : pattern.getDisplayName();
     }
 
     private static File getStorageFile(UUID playerUUID) {
@@ -242,6 +330,20 @@ public class PatternStorage {
             this.source = source;
             this.timestamp = timestamp;
             this.previews = previews;
+        }
+    }
+
+    /**
+     * 样板详情 — 输入/输出物品名列表
+     */
+    public static class PatternDetail {
+
+        public final List<String> inputs;
+        public final List<String> outputs;
+
+        public PatternDetail(List<String> inputs, List<String> outputs) {
+            this.inputs = inputs;
+            this.outputs = outputs;
         }
     }
 }

@@ -77,12 +77,12 @@ public class GuiPatternStorage extends GuiContainer {
         int btnY = guiTop + GUI_H - 48;
 
         btnExtract = new GuiButton(
-            0,
-            guiLeft + (GUI_W / 2 - btnW - 4),
-            btnY,
-            btnW,
-            btnH,
-            "\u53D6\u51FA\u5230\u80CC\u5305");
+                0,
+                guiLeft + (GUI_W / 2 - btnW - 4),
+                btnY,
+                btnW,
+                btnH,
+                "\u53D6\u51FA\u5230\u80CC\u5305");
         btnClear = new GuiButton(1, guiLeft + (GUI_W / 2 + 4), btnY, btnW, btnH, "\u4E00\u952E\u6E05\u7A7A");
 
         int navBtnW = 40;
@@ -106,7 +106,7 @@ public class GuiPatternStorage extends GuiContainer {
         // 标题栏
         int titleY = guiTop + 6;
         fontRendererObj
-            .drawStringWithShadow("\u25B8 \u6837\u677F\u4ED3\u50A8", guiLeft + PAD + 2, titleY, COL_TITLE_TEXT);
+                .drawStringWithShadow("\u25B8 \u6837\u677F\u4ED3\u50A8", guiLeft + PAD + 2, titleY, COL_TITLE_TEXT);
         drawRect(guiLeft + PAD, guiTop + 18, guiLeft + GUI_W - PAD, guiTop + 19, COL_BORDER_GLOW);
 
         int contentLeft = guiLeft + PAD;
@@ -119,42 +119,45 @@ public class GuiPatternStorage extends GuiContainer {
             String emptyMsg = "\u4ED3\u50A8\u4E3A\u7A7A\uFF0C\u8BF7\u5148\u5728\u914D\u7F6E GUI \u4E2D\u751F\u6210\u6837\u677F";
             int textW = fontRendererObj.getStringWidth(emptyMsg);
             fontRendererObj
-                .drawStringWithShadow(emptyMsg, contentLeft + (GUI_W - PAD * 2 - textW) / 2, y + 16, COL_EMPTY_TEXT);
+                    .drawStringWithShadow(emptyMsg, contentLeft + (GUI_W - PAD * 2 - textW) / 2, y + 16,
+                            COL_EMPTY_TEXT);
         } else {
             // 统计卡片
             int statsH = 14 + 12 * 3 + CARD_PAD;
             drawCard(contentLeft, y, GUI_W - PAD * 2, statsH);
             fontRendererObj
-                .drawStringWithShadow("\u00A7r\u7EDF\u8BA1", contentLeft + CARD_PAD, y + 3, COL_SECTION_TEXT);
+                    .drawStringWithShadow("\u00A7r\u7EDF\u8BA1", contentLeft + CARD_PAD, y + 3, COL_SECTION_TEXT);
             y += 14;
 
             fontRendererObj.drawStringWithShadow(
-                "\u00A77\u603B\u6570: \u00A7f" + container.patternCount + " \u00A77\u4E2A\u6837\u677F",
-                contentLeft + CARD_PAD,
-                y,
-                COL_LABEL_TEXT);
+                    "\u00A77\u603B\u6570: \u00A7f" + container.patternCount + " \u00A77\u4E2A\u6837\u677F",
+                    contentLeft + CARD_PAD,
+                    y,
+                    COL_LABEL_TEXT);
             y += 12;
 
             fontRendererObj.drawStringWithShadow(
-                "\u00A77\u6765\u6E90: \u00A7f" + container.source,
-                contentLeft + CARD_PAD,
-                y,
-                COL_LABEL_TEXT);
+                    "\u00A77\u6765\u6E90: \u00A7f" + container.source,
+                    contentLeft + CARD_PAD,
+                    y,
+                    COL_LABEL_TEXT);
             y += 12;
 
             String timeStr = formatTimestamp(container.timestamp);
             fontRendererObj.drawStringWithShadow(
-                "\u00A77\u751F\u6210\u65F6\u95F4: \u00A7f" + timeStr,
-                contentLeft + CARD_PAD,
-                y,
-                COL_LABEL_TEXT);
+                    "\u00A77\u751F\u6210\u65F6\u95F4: \u00A7f" + timeStr,
+                    contentLeft + CARD_PAD,
+                    y,
+                    COL_LABEL_TEXT);
             y += 12 + CARD_PAD + 4;
 
             // 预览卡片（分页）
             List<String> previews = container.previews;
             int totalPages = Math.max(1, (container.patternCount + PAGE_SIZE - 1) / PAGE_SIZE);
-            if (currentPage >= totalPages) currentPage = totalPages - 1;
-            if (currentPage < 0) currentPage = 0;
+            if (currentPage >= totalPages)
+                currentPage = totalPages - 1;
+            if (currentPage < 0)
+                currentPage = 0;
 
             int startIdx = currentPage * PAGE_SIZE;
             int endIdx = Math.min(startIdx + PAGE_SIZE, startIdx + previews.size());
@@ -163,19 +166,19 @@ public class GuiPatternStorage extends GuiContainer {
             int previewH = 14 + actualPreviewCount * 12 + 12 + CARD_PAD;
             drawCard(contentLeft, y, GUI_W - PAD * 2, previewH);
             fontRendererObj.drawStringWithShadow(
-                "\u00A7r\u6837\u677F\u9884\u89C8",
-                contentLeft + CARD_PAD,
-                y + 3,
-                COL_SECTION_TEXT);
+                    "\u00A7r\u6837\u677F\u9884\u89C8",
+                    contentLeft + CARD_PAD,
+                    y + 3,
+                    COL_SECTION_TEXT);
 
             // 页码在标题右侧
             String pageInfo = EnumChatFormatting.DARK_GRAY + "(" + (currentPage + 1) + "/" + totalPages + ")";
             int pageInfoW = fontRendererObj.getStringWidth(pageInfo);
             fontRendererObj.drawStringWithShadow(
-                pageInfo,
-                contentLeft + GUI_W - PAD * 2 - CARD_PAD - pageInfoW,
-                y + 3,
-                COL_EMPTY_TEXT);
+                    pageInfo,
+                    contentLeft + GUI_W - PAD * 2 - CARD_PAD - pageInfoW,
+                    y + 3,
+                    COL_EMPTY_TEXT);
             y += 14;
 
             previewStartX = contentLeft + CARD_PAD;
@@ -186,9 +189,9 @@ public class GuiPatternStorage extends GuiContainer {
 
                 int globalIdx = startIdx + i;
                 String line = EnumChatFormatting.GRAY + "#" + (globalIdx + 1) + "  " + EnumChatFormatting.WHITE;
-                String name = i < previews.size() ? previews.get(i) : "?";
+                String name = globalIdx < previews.size() ? previews.get(globalIdx) : "?";
                 // 截断过长的名称 (留出删除按钮空间)
-                int maxNameW = GUI_W - PAD * 2 - CARD_PAD * 2 - 50;
+                int maxNameW = GUI_W - PAD * 2 - CARD_PAD * 2 - 20;
                 if (fontRendererObj.getStringWidth(name) > maxNameW) {
                     while (fontRendererObj.getStringWidth(name + "...") > maxNameW && name.length() > 5) {
                         name = name.substring(0, name.length() - 1);
@@ -197,23 +200,17 @@ public class GuiPatternStorage extends GuiContainer {
                 }
                 fontRendererObj.drawStringWithShadow(line + name, previewStartX, y, COL_PREVIEW_TEXT);
 
-                // 删除按钮 [×]
-                boolean deleteHovered = mouseX >= deleteButtonX && mouseX < deleteButtonX + 10
-                    && mouseY >= y - 1
-                    && mouseY < y + 10;
-                int delColor = deleteHovered ? COL_DELETE_HOVER : COL_DELETE_NORMAL;
-                drawRect(deleteButtonX - 1, y - 1, deleteButtonX + 10, y + 10, delColor);
-                fontRendererObj.drawStringWithShadow("\u00D7", deleteButtonX + 1, y, 0xFFAAAA);
-
+                // 点击行区域 -> 打开详情
+                // 这里只绘制文本，点击检测在 mouseClicked
                 y += 12;
             }
 
             // 翻页提示
             fontRendererObj.drawStringWithShadow(
-                EnumChatFormatting.DARK_GRAY + "\u5171 " + container.patternCount + " \u6761",
-                previewStartX,
-                y,
-                COL_EMPTY_TEXT);
+                    EnumChatFormatting.DARK_GRAY + "\u5171 " + container.patternCount + " \u6761",
+                    previewStartX,
+                    y,
+                    COL_EMPTY_TEXT);
         }
 
         // 自定义按钮
@@ -231,11 +228,11 @@ public class GuiPatternStorage extends GuiContainer {
         drawRect(guiLeft + PAD, statusY - 3, guiLeft + GUI_W - PAD, statusY - 2, COL_DIVIDER);
         drawRect(guiLeft + PAD, statusY - 2, guiLeft + GUI_W - PAD, guiTop + GUI_H - 4, COL_STATUS_BG);
         fontRendererObj.drawStringWithShadow(
-            EnumChatFormatting.GRAY
-                + "\u25CF \u8E72\u4E0B\u53F3\u952E\u65B9\u5757\u53EF\u76F4\u63A5\u5BFC\u51FA\u5230\u5BB9\u5668",
-            guiLeft + PAD + 4,
-            statusY + 1,
-            0xCCCCCC);
+                EnumChatFormatting.GRAY
+                        + "\u25CF \u8E72\u4E0B\u53F3\u952E\u65B9\u5757\u53EF\u76F4\u63A5\u5BFC\u51FA\u5230\u5BB9\u5668",
+                guiLeft + PAD + 4,
+                statusY + 1,
+                0xCCCCCC);
     }
 
     @Override
@@ -259,8 +256,8 @@ public class GuiPatternStorage extends GuiContainer {
 
     private void drawModernButton(GuiButton btn, int mouseX, int mouseY, boolean accent, boolean danger) {
         boolean hovered = mouseX >= btn.xPosition && mouseX < btn.xPosition + btn.width
-            && mouseY >= btn.yPosition
-            && mouseY < btn.yPosition + btn.height;
+                && mouseY >= btn.yPosition
+                && mouseY < btn.yPosition + btn.height;
 
         int bgColor;
         if (danger) {
@@ -283,7 +280,8 @@ public class GuiPatternStorage extends GuiContainer {
     }
 
     private String formatTimestamp(long ts) {
-        if (ts <= 0) return "N/A";
+        if (ts <= 0)
+            return "N/A";
         return new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date(ts));
     }
 
@@ -314,15 +312,22 @@ public class GuiPatternStorage extends GuiContainer {
                 currentPage++;
             }
         } else {
-            // 检查点击删除按钮
+            // 点击行 -> 打开详情
             for (int i = 0; i < actualPreviewCount; i++) {
-                if (mouseX >= deleteButtonX && mouseX < deleteButtonX + 10
-                    && mouseY >= previewLineY[i] - 1
-                    && mouseY < previewLineY[i] + 10) {
+                // 判断 Y 轴范围 (行高 12px)
+                if (mouseY >= previewLineY[i] - 1 && mouseY < previewLineY[i] + 11
+                        && mouseX >= previewStartX
+                        && mouseX < previewStartX + GUI_W - PAD * 2 - CARD_PAD * 2) {
+
                     int globalIdx = currentPage * PAGE_SIZE + i;
-                    NetworkHandler
-                        .sendStorageAction(new PacketStorageAction(PacketStorageAction.ACTION_DELETE, globalIdx));
-                    mc.thePlayer.closeScreen();
+
+                    // 获取详情信息
+                    com.github.ae2patterngen.storage.PatternStorage.PatternDetail detail = com.github.ae2patterngen.storage.PatternStorage
+                            .getPatternDetail(mc.thePlayer.getUniqueID(), globalIdx);
+
+                    if (detail != null) {
+                        mc.displayGuiScreen(new GuiPatternDetail(this, globalIdx, detail.inputs, detail.outputs));
+                    }
                     return;
                 }
             }
@@ -331,7 +336,7 @@ public class GuiPatternStorage extends GuiContainer {
 
     private boolean isMouseOver(GuiButton btn, int mx, int my) {
         return mx >= btn.xPosition && mx < btn.xPosition + btn.width
-            && my >= btn.yPosition
-            && my < btn.yPosition + btn.height;
+                && my >= btn.yPosition
+                && my < btn.yPosition + btn.height;
     }
 }

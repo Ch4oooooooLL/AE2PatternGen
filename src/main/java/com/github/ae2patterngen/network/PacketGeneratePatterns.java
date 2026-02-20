@@ -39,11 +39,13 @@ public class PacketGeneratePatterns implements IMessage {
     private String blacklistInput;
     private String blacklistOutput;
     private String replacements;
+    private int targetTier;
 
-    public PacketGeneratePatterns() {}
+    public PacketGeneratePatterns() {
+    }
 
     public PacketGeneratePatterns(String recipeMapId, String outputOreDict, String inputOreDict, String ncItem,
-        String blacklistInput, String blacklistOutput, String replacements) {
+            String blacklistInput, String blacklistOutput, String replacements, int targetTier) {
         this.recipeMapId = recipeMapId;
         this.outputOreDict = outputOreDict;
         this.inputOreDict = inputOreDict;
@@ -51,6 +53,7 @@ public class PacketGeneratePatterns implements IMessage {
         this.blacklistInput = blacklistInput;
         this.blacklistOutput = blacklistOutput;
         this.replacements = replacements;
+        this.targetTier = targetTier;
     }
 
     @Override
@@ -62,6 +65,7 @@ public class PacketGeneratePatterns implements IMessage {
         blacklistInput = ByteBufUtils.readUTF8String(buf);
         blacklistOutput = ByteBufUtils.readUTF8String(buf);
         replacements = ByteBufUtils.readUTF8String(buf);
+        targetTier = buf.readInt();
     }
 
     @Override
@@ -73,6 +77,7 @@ public class PacketGeneratePatterns implements IMessage {
         ByteBufUtils.writeUTF8String(buf, blacklistInput != null ? blacklistInput : "");
         ByteBufUtils.writeUTF8String(buf, blacklistOutput != null ? blacklistOutput : "");
         ByteBufUtils.writeUTF8String(buf, replacements != null ? replacements : "");
+        buf.writeInt(targetTier);
     }
 
     public static class Handler implements IMessageHandler<PacketGeneratePatterns, IMessage> {
@@ -86,12 +91,12 @@ public class PacketGeneratePatterns implements IMessage {
             if (!PatternStorage.isEmpty(uuid)) {
                 PatternStorage.StorageSummary existing = PatternStorage.getSummary(uuid);
                 player.addChatMessage(
-                    new ChatComponentText(
-                        EnumChatFormatting.RED + "[AE2PatternGen] 仓储中仍有 "
-                            + existing.count
-                            + " 个未清空的样板 (来源: "
-                            + existing.source
-                            + ")。请先蹲下右键查看并取出/清空后再生成新样板。"));
+                        new ChatComponentText(
+                                EnumChatFormatting.RED + "[AE2PatternGen] 仓储中仍有 "
+                                        + existing.count
+                                        + " 个未清空的样板 (来源: "
+                                        + existing.source
+                                        + ")。请先蹲下右键查看并取出/清空后再生成新样板。"));
                 return null;
             }
 
@@ -99,14 +104,14 @@ public class PacketGeneratePatterns implements IMessage {
             List<String> matchedMaps = GTRecipeSource.findMatchingRecipeMaps(message.recipeMapId);
             if (matchedMaps.isEmpty()) {
                 player.addChatMessage(
-                    new ChatComponentText(
-                        EnumChatFormatting.RED + "[AE2PatternGen] 未找到匹配的配方表: " + message.recipeMapId));
+                        new ChatComponentText(
+                                EnumChatFormatting.RED + "[AE2PatternGen] 未找到匹配的配方表: " + message.recipeMapId));
                 return null;
             }
 
             player.addChatMessage(
-                new ChatComponentText(
-                    EnumChatFormatting.GRAY + "[AE2PatternGen] 匹配到配方表: " + String.join(", ", matchedMaps)));
+                    new ChatComponentText(
+                            EnumChatFormatting.GRAY + "[AE2PatternGen] 匹配到配方表: " + String.join(", ", matchedMaps)));
 
             // 2. 收集原始配方
             List<RecipeEntry> recipes = GTRecipeSource.collectRecipes(message.recipeMapId);
@@ -115,7 +120,7 @@ public class PacketGeneratePatterns implements IMessage {
             // 3. 构建过滤器
             CompositeFilter filter = new CompositeFilter();
             if (message.outputOreDict != null && !message.outputOreDict.isEmpty()
-                && !message.outputOreDict.equals("*")) {
+                    && !message.outputOreDict.equals("*")) {
                 filter.addFilter(new OutputOreDictFilter(message.outputOreDict));
             }
             if (message.inputOreDict != null && !message.inputOreDict.isEmpty() && !message.inputOreDict.equals("*")) {
@@ -125,12 +130,17 @@ public class PacketGeneratePatterns implements IMessage {
                 filter.addFilter(new NCItemFilter(message.ncItem));
             }
             if (message.blacklistInput != null && !message.blacklistInput.isEmpty()
-                && !message.blacklistInput.equals("*")) {
+                    && !message.blacklistInput.equals("*")) {
                 filter.addFilter(new BlacklistFilter(message.blacklistInput, true, false));
             }
             if (message.blacklistOutput != null && !message.blacklistOutput.isEmpty()
-                && !message.blacklistOutput.equals("*")) {
+                    && !message.blacklistOutput.equals("*")) {
                 filter.addFilter(new BlacklistFilter(message.blacklistOutput, false, true));
+            }
+
+            // [新增] 电压等级过滤
+            if (message.targetTier >= 0) {
+                filter.addFilter(new com.github.ae2patterngen.filter.TierFilter(message.targetTier));
             }
 
             // 4. 应用过滤
@@ -142,41 +152,42 @@ public class PacketGeneratePatterns implements IMessage {
             }
 
             player.addChatMessage(
-                new ChatComponentText(
-                    EnumChatFormatting.GRAY + "[AE2PatternGen] 原始配方: "
-                        + totalBeforeFilter
-                        + ", 过滤后: "
-                        + filtered.size()));
+                    new ChatComponentText(
+                            EnumChatFormatting.GRAY + "[AE2PatternGen] 原始配方: "
+                                    + totalBeforeFilter
+                                    + ", 过滤后: "
+                                    + filtered.size()));
 
             if (filtered.isEmpty()) {
                 player.addChatMessage(
-                    new ChatComponentText(EnumChatFormatting.YELLOW + "[AE2PatternGen] 没有找到匹配的配方 (请检查正则/矿辞)"));
+                        new ChatComponentText(EnumChatFormatting.YELLOW + "[AE2PatternGen] 没有找到匹配的配方 (请检查正则/矿辞)"));
                 return null;
             }
 
-            // 5. 应用矿辞替换
-            OreDictReplacer replacer = new OreDictReplacer(message.replacements);
+            // 5. 应用矿辞替换 (从服务端配置读取)
+            OreDictReplacer replacer = new OreDictReplacer(
+                    com.github.ae2patterngen.config.ReplacementConfig.getRulesString());
             if (replacer.hasRules()) {
                 List<RecipeEntry> replaced = new java.util.ArrayList<>();
                 for (RecipeEntry recipe : filtered) {
                     replaced.add(
-                        new RecipeEntry(
-                            recipe.sourceType,
-                            recipe.recipeMapId,
-                            recipe.machineDisplayName,
-                            replacer.apply(recipe.inputs),
-                            replacer.apply(recipe.outputs),
-                            recipe.fluidInputs,
-                            recipe.fluidOutputs,
-                            recipe.specialItems,
-                            recipe.duration,
-                            recipe.euPerTick));
+                            new RecipeEntry(
+                                    recipe.sourceType,
+                                    recipe.recipeMapId,
+                                    recipe.machineDisplayName,
+                                    replacer.apply(recipe.inputs),
+                                    replacer.apply(recipe.outputs),
+                                    recipe.fluidInputs,
+                                    recipe.fluidOutputs,
+                                    recipe.specialItems,
+                                    recipe.duration,
+                                    recipe.euPerTick));
                 }
                 filtered = replaced;
                 player.addChatMessage(new ChatComponentText(EnumChatFormatting.GRAY + "[AE2PatternGen] 已应用矿辞替换规则"));
             }
 
-            // 6. 编码样板
+            // 6. 编码样板 (并未实际存入服务器物理世界，只是生成了对象)
             List<ItemStack> patterns = PatternEncoder.encodeBatch(filtered);
 
             if (patterns.isEmpty()) {
@@ -184,14 +195,31 @@ public class PacketGeneratePatterns implements IMessage {
                 return null;
             }
 
-            // 7. 写入虚拟仓储
+            // 7. 结算消耗物 (空白样板)
+            int requiredCount = patterns.size();
+            ItemStack blankPattern = com.github.ae2patterngen.util.InventoryUtil.getBlankPattern();
+
+            if (!com.github.ae2patterngen.util.InventoryUtil.consumeItem(player, blankPattern, requiredCount)) {
+                int currentHas = com.github.ae2patterngen.util.InventoryUtil.countItem(player, blankPattern);
+                player.addChatMessage(
+                        new ChatComponentText(
+                                EnumChatFormatting.RED + "[AE2PatternGen] 生成失败: 空白样板不足。"));
+                player.addChatMessage(
+                        new ChatComponentText(
+                                EnumChatFormatting.RED + "本次配方生成需要 " + requiredCount + " 个空白样板，但背包中仅有 " + currentHas
+                                        + " 个。"));
+                return null;
+            }
+
+            // 8. 写入虚拟仓储
             PatternStorage.save(uuid, patterns, message.recipeMapId);
 
             player.addChatMessage(
-                new ChatComponentText(
-                    EnumChatFormatting.GREEN + "[AE2PatternGen] 已生成 "
-                        + patterns.size()
-                        + " 个样板并存入仓储! 蹲下右键空气查看，蹲下右键容器导出。"));
+                    new ChatComponentText(
+                            EnumChatFormatting.GREEN + "[AE2PatternGen] 已扣除 " + requiredCount + " 个空白样板并生成了等量成品。"));
+            player.addChatMessage(
+                    new ChatComponentText(
+                            EnumChatFormatting.GRAY + "成品已存入仓储! 蹲下右键空气查看，蹲下右键容器导出。"));
 
             return null;
         }

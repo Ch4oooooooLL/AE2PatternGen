@@ -23,11 +23,13 @@ public class PacketSaveFields implements IMessage {
     private String blacklistInput;
     private String blacklistOutput;
     private String replacements;
+    private int targetTier;
 
-    public PacketSaveFields() {}
+    public PacketSaveFields() {
+    }
 
     public PacketSaveFields(String recipeMap, String outputOre, String inputOre, String ncItem, String blacklistInput,
-        String blacklistOutput, String replacements) {
+            String blacklistOutput, String replacements, int targetTier) {
         this.recipeMap = recipeMap;
         this.outputOre = outputOre;
         this.inputOre = inputOre;
@@ -35,6 +37,7 @@ public class PacketSaveFields implements IMessage {
         this.blacklistInput = blacklistInput;
         this.blacklistOutput = blacklistOutput;
         this.replacements = replacements;
+        this.targetTier = targetTier;
     }
 
     @Override
@@ -46,6 +49,7 @@ public class PacketSaveFields implements IMessage {
         blacklistInput = ByteBufUtils.readUTF8String(buf);
         blacklistOutput = ByteBufUtils.readUTF8String(buf);
         replacements = ByteBufUtils.readUTF8String(buf);
+        targetTier = buf.readInt();
     }
 
     @Override
@@ -57,6 +61,7 @@ public class PacketSaveFields implements IMessage {
         ByteBufUtils.writeUTF8String(buf, blacklistInput != null ? blacklistInput : "");
         ByteBufUtils.writeUTF8String(buf, blacklistOutput != null ? blacklistOutput : "");
         ByteBufUtils.writeUTF8String(buf, replacements != null ? replacements : "");
+        buf.writeInt(targetTier);
     }
 
     public static class Handler implements IMessageHandler<PacketSaveFields, IMessage> {
@@ -64,19 +69,21 @@ public class PacketSaveFields implements IMessage {
         @Override
         public IMessage onMessage(PacketSaveFields message, MessageContext ctx) {
             EntityPlayerMP player = ctx.getServerHandler().playerEntity;
-            if (player == null) return null;
+            if (player == null)
+                return null;
             ItemStack held = player.getCurrentEquippedItem();
 
             if (held != null && held.getItem() instanceof ItemPatternGenerator) {
                 ItemPatternGenerator.saveAllFields(
-                    held,
-                    message.recipeMap,
-                    message.outputOre,
-                    message.inputOre,
-                    message.ncItem,
-                    message.blacklistInput,
-                    message.blacklistOutput,
-                    message.replacements);
+                        held,
+                        message.recipeMap,
+                        message.outputOre,
+                        message.inputOre,
+                        message.ncItem,
+                        message.blacklistInput,
+                        message.blacklistOutput,
+                        message.replacements,
+                        message.targetTier);
             }
 
             return null;
