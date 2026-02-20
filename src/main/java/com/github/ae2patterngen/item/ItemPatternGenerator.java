@@ -20,6 +20,9 @@ import org.lwjgl.input.Keyboard;
 
 import com.github.ae2patterngen.storage.PatternStorage;
 
+import appeng.api.features.INetworkEncodable;
+import appeng.api.features.IWirelessTermHandler;
+import appeng.api.util.IConfigManager;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
@@ -31,7 +34,7 @@ import cpw.mods.fml.relauncher.SideOnly;
  * <li>蹲下右键 (方块) → 导出样板到方块容器</li>
  * </ul>
  */
-public class ItemPatternGenerator extends Item {
+public class ItemPatternGenerator extends Item implements INetworkEncodable, IWirelessTermHandler {
 
     public static final int GUI_ID = 101;
     public static final int GUI_ID_STORAGE = 102;
@@ -263,5 +266,50 @@ public class ItemPatternGenerator extends Item {
         saveField(stack, NBT_BLACKLIST_OUTPUT, blacklistOutput);
         saveField(stack, NBT_REPLACEMENTS, replacements);
         saveInt(stack, NBT_TARGET_TIER, targetTier);
+    }
+
+    // ---- INetworkEncodable ----
+
+    @Override
+    public String getEncryptionKey(ItemStack item) {
+        if (item != null && item.hasTagCompound()) {
+            return item.getTagCompound()
+                .getString("encryptionKey");
+        }
+        return "";
+    }
+
+    @Override
+    public void setEncryptionKey(ItemStack item, String encKey, String name) {
+        if (item != null) {
+            if (!item.hasTagCompound()) {
+                item.setTagCompound(new NBTTagCompound());
+            }
+            item.getTagCompound()
+                .setString("encryptionKey", encKey);
+        }
+    }
+
+    // ---- IWirelessTermHandler ----
+
+    @Override
+    public boolean canHandle(ItemStack is) {
+        return is != null && is.getItem() == this;
+    }
+
+    @Override
+    public boolean usePower(EntityPlayer player, double amount, ItemStack is) {
+        // 生成器目前不消耗 AE2 能量
+        return true;
+    }
+
+    @Override
+    public boolean hasPower(EntityPlayer player, double amount, ItemStack is) {
+        return true;
+    }
+
+    @Override
+    public IConfigManager getConfigManager(ItemStack is) {
+        return null;
     }
 }

@@ -16,6 +16,17 @@ public class CommonProxy {
     public void init(FMLInitializationEvent event, Object modInstance) {
         cpw.mods.fml.common.network.NetworkRegistry.INSTANCE
             .registerGuiHandler(modInstance, new com.github.ae2patterngen.gui.GuiHandler());
+
+        // 注册 AE2 无线处理器 (用于安全终端绑定)
+        try {
+            appeng.api.AEApi.instance()
+                .registries()
+                .wireless()
+                .registerWirelessHandler((appeng.api.features.IWirelessTermHandler) ModItems.itemPatternGenerator);
+        } catch (Throwable e) {
+            cpw.mods.fml.common.FMLLog.warning("[AE2PatternGen] 无法注册 AE2 无线处理器: %s", e.getMessage());
+        }
+
         cpw.mods.fml.common.registry.GameRegistry.addShapedRecipe(
             new net.minecraft.item.ItemStack(ModItems.itemPatternGenerator),
             "ABA",

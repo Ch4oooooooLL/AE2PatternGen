@@ -19,6 +19,15 @@ import com.github.ae2patterngen.recipe.GTRecipeSource;
 import com.github.ae2patterngen.recipe.RecipeEntry;
 import com.github.ae2patterngen.storage.PatternStorage;
 
+import appeng.api.AEApi;
+import appeng.api.config.Actionable;
+import appeng.api.features.IWirelessTermHandler;
+import appeng.api.networking.IGrid;
+import appeng.api.networking.security.IActionHost;
+import appeng.api.networking.security.PlayerSource;
+import appeng.api.networking.storage.IStorageGrid;
+import appeng.api.storage.IMEMonitor;
+import appeng.api.storage.data.IAEItemStack;
 import cpw.mods.fml.common.network.ByteBufUtils;
 import cpw.mods.fml.common.network.simpleimpl.IMessage;
 import cpw.mods.fml.common.network.simpleimpl.IMessageHandler;
@@ -197,14 +206,67 @@ public class PacketGeneratePatterns implements IMessage {
             // 7. 结算消耗物 (空白样板)
             int requiredCount = patterns.size();
             ItemStack blankPattern = com.github.ae2patterngen.util.InventoryUtil.getBlankPattern();
+            boolean consumed = false;
 
-            if (!com.github.ae2patterngen.util.InventoryUtil.consumeItem(player, blankPattern, requiredCount)) {
-                int currentHas = com.github.ae2patterngen.util.InventoryUtil.countItem(player, blankPattern);
-                player.addChatMessage(new ChatComponentText(EnumChatFormatting.RED + "[AE2PatternGen] 生成失败: 空白样板不足。"));
-                player.addChatMessage(
-                    new ChatComponentText(
-                        EnumChatFormatting.RED + "本次配方生成需要 " + requiredCount + " 个空白样板，但背包中仅有 " + currentHas + " 个。"));
-                return null;
+            // 优先尝试从 AE2 网络无线提取
+            ItemStack heldItem = player.getHeldItem();
+            if (heldItem != null && heldItem.getItem() instanceof IWirelessTermHandler) {
+                try {
+                    IWirelessTermHandler handler = (IWirelessTermHandler) heldItem.getItem();
+                    String key = handler.getEncryptionKey(heldItem);
+                    if (key != null && !key.isEmpty()) {
+                        long serial = Long.parseLong(key);
+                        Object obj = AEApi.instance()
+                            .registries()
+                            .locatable()
+                            .getLocatableBy(serial);
+
+                        if (obj instanceof IActionHost) {
+                            IGrid grid = ((IActionHost) obj).getActionableNode()
+                                .getGrid();
+                            if (grid != null) {
+                                IStorageGrid storage = grid.getCache(IStorageGrid.class);
+                                IMEMonitor<IAEItemStack> inventory = storage.getItemInventory();
+
+                                IAEItemStack required = AEApi.instance()
+                                    .storage()
+                                    .createItemStack(blankPattern)
+                                    .setStackSize(requiredCount);
+                                // 检查网络中是否有足够的物品
+                                IAEItemStack available = inventory
+                                    .extractItems(required, Actionable.SIMULATE, new PlayerSource(player, null));
+
+                                if (available != null && available.getStackSize() >= requiredCount) {
+                                    // 实际提取
+                                    inventory
+                                        .extractItems(required, Actionable.MODULATE, new PlayerSource(player, null));
+                                    consumed = true;
+                                    player.addChatMessage(
+                                        new ChatComponentText(
+                                            EnumChatFormatting.AQUA + "[AE2PatternGen] 已从绑定的 ME 网络中无线提取空白样板。"));
+                                }
+                            }
+                        }
+                    }
+                } catch (Throwable e) {
+                    // AE2 API 异常，回退到背包消耗
+                }
+            }
+
+            if (!consumed) {
+                if (!com.github.ae2patterngen.util.InventoryUtil.consumeItem(player, blankPattern, requiredCount)) {
+                    int currentHas = com.github.ae2patterngen.util.InventoryUtil.countItem(player, blankPattern);
+                    player.addChatMessage(
+                        new ChatComponentText(EnumChatFormatting.RED + "[AE2PatternGen] 生成失败: 空白样板不足 (且未连接有效的无线网络)。"));
+                    player.addChatMessage(
+                        new ChatComponentText(
+                            EnumChatFormatting.RED + "本次配方生成需要 "
+                                + requiredCount
+                                + " 个空白样板，但背包中仅有 "
+                                + currentHas
+                                + " 个。"));
+                    return null;
+                }
             }
 
             // 8. 写入虚拟仓储
