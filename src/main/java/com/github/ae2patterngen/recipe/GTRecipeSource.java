@@ -127,9 +127,9 @@ public class GTRecipeSource {
             .append("|");
         if (recipe.mInputs != null) {
             for (ItemStack is : recipe.mInputs) {
-                if (is != null) sb.append(
-                    is.getItem()
-                        .getUnlocalizedName())
+                if (is != null) sb.append(is.getUnlocalizedName())
+                    .append("@")
+                    .append(is.getItemDamage())
                     .append("@")
                     .append(is.stackSize)
                     .append(",");
@@ -139,13 +139,27 @@ public class GTRecipeSource {
         sb.append("|");
         if (recipe.mOutputs != null) {
             for (ItemStack is : recipe.mOutputs) {
-                if (is != null) sb.append(
-                    is.getItem()
-                        .getUnlocalizedName())
+                if (is != null) sb.append(is.getUnlocalizedName())
+                    .append("@")
+                    .append(is.getItemDamage())
                     .append("@")
                     .append(is.stackSize)
                     .append(",");
                 else sb.append("NULL,");
+            }
+        }
+        sb.append("|SP:");
+        if (recipe.mSpecialItems instanceof ItemStack) {
+            ItemStack is = (ItemStack) recipe.mSpecialItems;
+            sb.append(is.getUnlocalizedName())
+                .append("@")
+                .append(is.getItemDamage());
+        } else if (recipe.mSpecialItems instanceof ItemStack[]) {
+            for (ItemStack is : (ItemStack[]) recipe.mSpecialItems) {
+                if (is != null) sb.append(is.getUnlocalizedName())
+                    .append("@")
+                    .append(is.getItemDamage())
+                    .append(",");
             }
         }
         sb.append("|FI:");
