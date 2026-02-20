@@ -2,7 +2,6 @@
 pluginManagement {
     repositories {
         maven {
-            // RetroFuturaGradle
             name = "GTNH Maven"
             url = uri("https://nexus.gtnewhorizons.com/repository/public/")
             mavenContent {
@@ -16,6 +15,17 @@ pluginManagement {
     }
 }
 
+dependencyResolutionManagement {
+    repositories {
+        maven {
+            name = "GTNH Nexus"
+            url = uri("https://nexus.gtnewhorizons.com/repository/public/")
+        }
+        mavenCentral()
+        mavenLocal()
+    }
+}
+
 plugins {
-    id("com.gtnewhorizons.gtnhsettingsconvention") version("1.0.40")
+    id("com.gtnewhorizons.gtnhsettingsconvention") version("1.0.50")
 }
