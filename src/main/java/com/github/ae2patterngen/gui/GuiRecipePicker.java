@@ -1,178 +1,133 @@
 package com.github.ae2patterngen.gui;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiButton;
-import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.renderer.RenderHelper;
-import net.minecraft.client.renderer.entity.RenderItem;
 import net.minecraft.item.ItemStack;
-import net.minecraftforge.fluids.FluidStack;
-
-import org.lwjgl.opengl.GL11;
-import org.lwjgl.opengl.GL12;
+import net.minecraft.util.EnumChatFormatting;
 
 import com.github.ae2patterngen.network.NetworkHandler;
 import com.github.ae2patterngen.network.PacketRecipeConflicts;
 import com.github.ae2patterngen.network.PacketResolveConflicts;
 import com.github.ae2patterngen.recipe.RecipeEntry;
+import com.gtnewhorizons.modularui.api.drawable.ItemDrawable;
+import com.gtnewhorizons.modularui.api.screen.ModularWindow;
+import com.gtnewhorizons.modularui.api.screen.UIBuildContext;
+import com.gtnewhorizons.modularui.common.internal.wrapper.ModularGui;
+import com.gtnewhorizons.modularui.common.internal.wrapper.ModularUIContainer;
+import com.gtnewhorizons.modularui.common.widget.ButtonWidget;
+import com.gtnewhorizons.modularui.common.widget.DrawableWidget;
+import com.gtnewhorizons.modularui.common.widget.Scrollable;
+import com.gtnewhorizons.modularui.common.widget.TextWidget;
 
-/**
- * 交互式配方选择 GUI
- */
-public class GuiRecipePicker extends GuiScreen {
+public class GuiRecipePicker {
 
-    private final PacketRecipeConflicts data;
     private static final int GUI_W = 320;
     private static final int RECIPE_H = 50;
-    private int guiLeft, guiTop;
-
-    // 颜色常量 (参考 GuiPatternGen)
-    private static final int COL_BG = 0xF0181825;
-    private static final int COL_BORDER = 0xFF5B89FF;
-    private static final int COL_CARD = 0xFF1E1E30;
-
-    public GuiRecipePicker(PacketRecipeConflicts data) {
-        this.data = data;
-    }
 
     public static void open(PacketRecipeConflicts message) {
+        UIBuildContext buildContext = new UIBuildContext(Minecraft.getMinecraft().thePlayer);
+        com.gtnewhorizons.modularui.api.screen.ModularUIContext muiContext = new com.gtnewhorizons.modularui.api.screen.ModularUIContext(
+            buildContext,
+            () -> {});
+        ModularWindow window = createWindow(buildContext, message);
         Minecraft.getMinecraft()
-            .displayGuiScreen(new GuiRecipePicker(message));
+            .displayGuiScreen(new ModularGui(new ModularUIContainer(muiContext, window)));
     }
 
-    @Override
-    public void initGui() {
-        this.guiLeft = (this.width - GUI_W) / 2;
-        int totalH = 40 + data.recipes.size() * (RECIPE_H + 5) + 30;
-        this.guiTop = (this.height - totalH) / 2;
+    public static ModularWindow createWindow(UIBuildContext buildContext, PacketRecipeConflicts data) {
+        int idealH = 40 + data.recipes.size() * (RECIPE_H + 5) + 35;
+        net.minecraft.client.gui.ScaledResolution res = new net.minecraft.client.gui.ScaledResolution(
+            Minecraft.getMinecraft(),
+            Minecraft.getMinecraft().displayWidth,
+            Minecraft.getMinecraft().displayHeight);
+        int maxH = Minecraft.getMinecraft().displayHeight / res.getScaleFactor() - 20;
+        int guiH = Math.min(idealH, maxH);
 
-        buttonList.clear();
+        ModularWindow.Builder builder = ModularWindow.builder(GUI_W, guiH);
+        builder.setBackground(com.gtnewhorizons.modularui.api.ModularUITextures.VANILLA_BACKGROUND);
+
+        String strTitle = EnumChatFormatting.BOLD + "配方冲突: " + EnumChatFormatting.WHITE + data.productName;
+        TextWidget titleText = new TextWidget(strTitle);
+        titleText.setScale(1.2f);
+        titleText.setSize(300, 20);
+        titleText
+            .setPos(GUI_W / 2 - (int) (Minecraft.getMinecraft().fontRenderer.getStringWidth(strTitle) * 1.2f) / 2, 8);
+        builder.widget(titleText);
+
+        String strProgress = "(" + data.currentIndex + " / " + data.totalConflicts + ")";
+        TextWidget progressText = new TextWidget(strProgress);
+        progressText.setPos(GUI_W / 2 - Minecraft.getMinecraft().fontRenderer.getStringWidth(strProgress) / 2, 20);
+        builder.widget(progressText);
+
+        Scrollable scrollable = new Scrollable().setVerticalScroll();
+        scrollable.setPos(8, 35);
+        scrollable.setSize(GUI_W - 16, guiH - 35 - 35);
+
         for (int i = 0; i < data.recipes.size(); i++) {
-            buttonList.add(
-                new GuiButton(
-                    i,
-                    guiLeft + GUI_W - 60,
-                    guiTop + 45 + i * (RECIPE_H + 5) + (RECIPE_H - 20) / 2,
-                    50,
-                    20,
-                    "选择"));
-        }
-        buttonList.add(new GuiButton(100, guiLeft + (GUI_W - 80) / 2, guiTop + totalH - 25, 80, 20, "放弃 (Cancel)"));
-    }
-
-    @Override
-    public void drawScreen(int mouseX, int mouseY, float partialTicks) {
-        // 1. 背景与边框
-        int totalH = 40 + data.recipes.size() * (RECIPE_H + 5) + 30;
-        drawRect(guiLeft, guiTop, guiLeft + GUI_W, guiTop + totalH, COL_BG);
-        drawHollowRect(guiLeft, guiTop, GUI_W, totalH, COL_BORDER);
-
-        // 2. 标题
-        String title = "配方冲突: " + data.productName;
-        drawCenteredString(fontRendererObj, title, guiLeft + GUI_W / 2, guiTop + 10, 0xFFFFFF);
-        String progress = "(" + data.currentIndex + " / " + data.totalConflicts + ")";
-        drawCenteredString(fontRendererObj, progress, guiLeft + GUI_W / 2, guiTop + 22, 0xAAAAAA);
-
-        // 3. 绘制配方卡片
-        RenderItem itemRender = RenderItem.getInstance();
-        for (int i = 0; i < data.recipes.size(); i++) {
-            int ry = guiTop + 45 + i * (RECIPE_H + 5);
-            drawRect(guiLeft + 5, ry, guiLeft + GUI_W - 5, ry + RECIPE_H, COL_CARD);
-
             RecipeEntry re = data.recipes.get(i);
+            int ry = i * (RECIPE_H + 5);
 
-            // 绘制物品 (原料)
-            int ix = guiLeft + 10;
-            int iy = ry + 15;
+            TextWidget inLabel = new TextWidget(EnumChatFormatting.BOLD + "原料:");
+            inLabel.setPos(4, ry + 20);
+            scrollable.widget(inLabel);
 
-            fontRendererObj.drawString("原料:", guiLeft + 10, ry + 5, 0x8899CC);
-            drawRecipeItems(re.inputs, re.fluidInputs, ix, iy);
+            drawRecipeItems(scrollable, re.inputs, 4 + 30, ry + 15);
 
-            // 绘制产物 (右侧)
-            int ox = guiLeft + 150;
-            fontRendererObj.drawString("产物:", ox, ry + 5, 0x8899CC);
-            drawRecipeItems(re.outputs, re.fluidOutputs, ox, iy);
+            TextWidget outLabel = new TextWidget(EnumChatFormatting.BOLD + "产物:");
+            outLabel.setPos(142, ry + 20);
+            scrollable.widget(outLabel);
+
+            drawRecipeItems(scrollable, re.outputs, 142 + 30, ry + 15);
+
+            final int recipeIndex = i;
+            ButtonWidget btnSelect = new ButtonWidget();
+            int btnX = GUI_W - 16 - 60 - 8;
+            int btnY = ry + 15;
+            btnSelect.setPos(btnX, btnY);
+            btnSelect.setSize(50, 20);
+            btnSelect.setOnClick(
+                (cd, w) -> { NetworkHandler.INSTANCE.sendToServer(new PacketResolveConflicts(recipeIndex, false)); });
+            btnSelect.setBackground(com.gtnewhorizons.modularui.api.ModularUITextures.VANILLA_BUTTON_NORMAL);
+            scrollable.widget(btnSelect);
+
+            TextWidget btnText = new TextWidget("选择");
+            btnText.setPos(btnX + 13, btnY + 6);
+            scrollable.widget(btnText);
         }
 
-        super.drawScreen(mouseX, mouseY, partialTicks);
+        builder.widget(scrollable);
 
-        // 4. Tooltips
-        for (int i = 0; i < data.recipes.size(); i++) {
-            int ry = guiTop + 45 + i * (RECIPE_H + 5);
-            handleTooltips(data.recipes.get(i), mouseX, mouseY, ry + 15);
-        }
-    }
-
-    private void drawRecipeItems(ItemStack[] items, FluidStack[] fluids, int startX, int startY) {
-        RenderHelper.enableGUIStandardItemLighting();
-        GL11.glEnable(GL12.GL_RESCALE_NORMAL);
-
-        int count = 0;
-        if (items != null) {
-            for (ItemStack stack : items) {
-                if (stack == null || count >= 7) continue;
-                this.itemRender.renderItemAndEffectIntoGUI(
-                    this.fontRendererObj,
-                    this.mc.getTextureManager(),
-                    stack,
-                    startX + count * 18,
-                    startY);
-                this.itemRender.renderItemOverlayIntoGUI(
-                    this.fontRendererObj,
-                    this.mc.getTextureManager(),
-                    stack,
-                    startX + count * 18,
-                    startY);
-                count++;
-            }
-        }
-        // 流体绘制简单化，由于没有流体渲染器，这里只画个颜色块或跳过
-        // 用户只要求展示原料产物，物品通常更重要
-
-        RenderHelper.disableStandardItemLighting();
-    }
-
-    private void handleTooltips(RecipeEntry re, int mx, int my, int startY) {
-        // 原料 Tooltip
-        int ix = guiLeft + 10;
-        checkAndDrawTooltip(re.inputs, mx, my, ix, startY);
-
-        // 产物 Tooltip
-        int ox = guiLeft + 150;
-        checkAndDrawTooltip(re.outputs, mx, my, ox, startY);
-    }
-
-    private void checkAndDrawTooltip(ItemStack[] items, int mx, int my, int startX, int startY) {
-        if (items == null) return;
-        for (int i = 0; i < items.length && i < 7; i++) {
-            if (items[i] == null) continue;
-            int x = startX + i * 18;
-            if (mx >= x && mx < x + 16 && my >= startY && my < startY + 16) {
-                renderToolTip(items[i], mx, my);
-            }
-        }
-    }
-
-    @Override
-    protected void actionPerformed(GuiButton button) {
-        if (button.id == 100) {
+        ButtonWidget btnCancel = new ButtonWidget();
+        int cancelX = (GUI_W - 80) / 2;
+        int cancelY = guiH - 25;
+        btnCancel.setPos(cancelX, cancelY);
+        btnCancel.setSize(80, 20);
+        btnCancel.setOnClick((cd, w) -> {
             NetworkHandler.INSTANCE.sendToServer(new PacketResolveConflicts(0, true));
-            this.mc.displayGuiScreen(null);
-        } else {
-            NetworkHandler.INSTANCE.sendToServer(new PacketResolveConflicts(button.id, false));
-            // 不需要手动关闭，服务端会发送下一个 PacketRecipeConflicts 或 finalize
+            Minecraft.getMinecraft()
+                .displayGuiScreen(null);
+        });
+        btnCancel.setBackground(com.gtnewhorizons.modularui.api.ModularUITextures.VANILLA_BUTTON_NORMAL);
+        builder.widget(btnCancel);
+
+        TextWidget btnCancelText = new TextWidget("放弃 (Cancel)");
+        btnCancelText.setPos(cancelX + 8, cancelY + 6);
+        builder.widget(btnCancelText);
+
+        return builder.build();
+    }
+
+    private static void drawRecipeItems(Scrollable parent, ItemStack[] items, int startX, int startY) {
+        if (items == null) return;
+        int count = 0;
+        for (ItemStack stack : items) {
+            if (stack == null || count >= 7) continue;
+
+            DrawableWidget slot = new DrawableWidget();
+            slot.setDrawable(new ItemDrawable(stack));
+            slot.setPos(startX + count * 18, startY);
+            slot.setSize(18, 18);
+            parent.widget(slot);
+            count++;
         }
-    }
-
-    private void drawHollowRect(int x, int y, int w, int h, int color) {
-        drawRect(x, y, x + w, y + 1, color);
-        drawRect(x, y + h - 1, x + w, y + h, color);
-        drawRect(x, y, x + 1, y + h, color);
-        drawRect(x + w - 1, y, x + w, y + h, color);
-    }
-
-    @Override
-    public boolean doesGuiPauseGame() {
-        return false;
     }
 }

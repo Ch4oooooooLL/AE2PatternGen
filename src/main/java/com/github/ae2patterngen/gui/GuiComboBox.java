@@ -8,9 +8,6 @@ import net.minecraft.util.EnumChatFormatting;
 
 import org.lwjgl.opengl.GL11;
 
-/**
- * 简单的自定义下拉框控件 (Modern Style)
- */
 public class GuiComboBox extends Gui {
 
     private final int xPosition;
@@ -24,17 +21,17 @@ public class GuiComboBox extends Gui {
     private boolean isEnabled = true;
     private boolean visible = true;
 
-    // Scrolling support
     private int scrollOffset = 0;
     private static final int MAX_VISIBLE_ITEMS = 8;
 
-    // Colors
-    private static final int COL_BG = 0xFF1E1E30;
-    private static final int COL_BORDER = 0xFF33335A;
-    private static final int COL_HOVER = 0xFF2E3B5A;
-    private static final int COL_TEXT = 0xFFFFFFFF;
+    // Light Theme Colors (1.21 AE Style)
+    private static final int COL_BG = 0xFFFFFFFF;
+    private static final int COL_BORDER = 0xFF373737;
+    private static final int COL_HOVER = 0xFFE0E0E0;
+    private static final int COL_TEXT = 0xFF404040;
     private static final int COL_TEXT_DISABLED = 0xFFAAAAAA;
-    private static final int COL_SCROLLBAR = 0xFF5B89FF;
+    private static final int COL_SCROLLBAR = 0xFF8B8B8B;
+    private static final int COL_BTN_BG = 0xFFD6D6D6;
 
     public GuiComboBox(int x, int y, int width, int height, List<String> options) {
         this.xPosition = x;
@@ -61,76 +58,77 @@ public class GuiComboBox extends Gui {
         return "";
     }
 
+    public boolean isExpanded() {
+        return isExpanded;
+    }
+
     public void drawComboBox(Minecraft mc, int mouseX, int mouseY) {
         if (!this.visible) return;
 
-        // Draw main box
-        drawRect(xPosition, yPosition, xPosition + width, yPosition + height, COL_BG);
+        drawRect(xPosition, yPosition, xPosition + width, yPosition + height, COL_BTN_BG);
         drawHollowRect(xPosition, yPosition, width, height, COL_BORDER);
 
-        // Draw selected text
         String text = getSelectedValue();
         int textColor = isEnabled ? COL_TEXT : COL_TEXT_DISABLED;
-        mc.fontRenderer.drawStringWithShadow(text, xPosition + 4, yPosition + (height - 8) / 2, textColor);
+        mc.fontRenderer.drawString(text, xPosition + 4, yPosition + (height - 8) / 2, textColor);
 
-        // Draw arrow
-        String arrow = isExpanded ? "\u25B2" : "\u25BC"; // Up/Down triangle
-        mc.fontRenderer.drawStringWithShadow(arrow, xPosition + width - 12, yPosition + (height - 8) / 2, 0xAAAAAA);
+        String arrow = isExpanded ? "\u25B2" : "\u25BC";
+        mc.fontRenderer.drawString(arrow, xPosition + width - 12, yPosition + (height - 8) / 2, COL_TEXT_DISABLED);
+    }
 
-        // Draw expanded list if open
-        if (isExpanded) {
-            GL11.glPushMatrix();
-            GL11.glTranslatef(0, 0, 300); // Elevate z-level
+    public void drawComboBoxList(Minecraft mc, int mouseX, int mouseY, int translateOffsetY) {
+        if (!this.visible || !this.isExpanded) return;
 
-            int visibleCount = Math.min(options.size(), MAX_VISIBLE_ITEMS);
-            int listH = visibleCount * height;
-            int listY = yPosition + height;
+        GL11.glPushMatrix();
+        GL11.glTranslatef(0, translateOffsetY, 300);
 
-            // Background
-            drawRect(xPosition, listY, xPosition + width, listY + listH, COL_BG);
-            drawHollowRect(xPosition, listY, width, listH, COL_BORDER);
+        int visibleCount = Math.min(options.size(), MAX_VISIBLE_ITEMS);
+        int listH = visibleCount * height;
+        int listY = yPosition + height;
 
-            // Draw items
-            for (int i = 0; i < visibleCount; i++) {
-                int actualIdx = i + scrollOffset;
-                if (actualIdx >= options.size()) break;
+        drawRect(xPosition, listY, xPosition + width, listY + listH, COL_BG);
+        drawHollowRect(xPosition, listY, width, listH, COL_BORDER);
 
-                int optY = listY + i * height;
-                boolean hovered = mouseX >= xPosition && mouseX < xPosition + width
-                    && mouseY >= optY
-                    && mouseY < optY + height;
+        for (int i = 0; i < visibleCount; i++) {
+            int actualIdx = i + scrollOffset;
+            if (actualIdx >= options.size()) break;
 
-                if (hovered) {
-                    drawRect(xPosition + 1, optY, xPosition + width - 1, optY + height, COL_HOVER);
-                }
+            int optY = listY + i * height;
+            boolean hovered = mouseX >= xPosition && mouseX < xPosition + width
+                && mouseY >= optY
+                && mouseY < optY + height;
 
-                String optText = options.get(actualIdx);
-                if (actualIdx == selectedIndex) {
-                    optText = EnumChatFormatting.YELLOW + optText;
-                }
-
-                mc.fontRenderer.drawStringWithShadow(optText, xPosition + 4, optY + (height - 8) / 2, COL_TEXT);
+            if (hovered) {
+                drawRect(xPosition + 1, optY, xPosition + width - 1, optY + height, COL_HOVER);
             }
 
-            // Draw Scrollbar hint if needed
-            if (options.size() > MAX_VISIBLE_ITEMS) {
-                int scrollTrackH = listH - 4;
-                int thumbH = Math.max(10, (int) ((float) MAX_VISIBLE_ITEMS / options.size() * scrollTrackH));
-                int thumbY = listY + 2
-                    + (int) ((float) scrollOffset / (options.size() - MAX_VISIBLE_ITEMS) * (scrollTrackH - thumbH));
-                drawRect(xPosition + width - 3, thumbY, xPosition + width - 1, thumbY + thumbH, COL_SCROLLBAR);
+            String optText = options.get(actualIdx);
+            if (actualIdx == selectedIndex) {
+                optText = EnumChatFormatting.DARK_GREEN + optText;
             }
 
-            GL11.glPopMatrix();
+            // Clean the formatting just to place our own colors
+            mc.fontRenderer.drawString(optText, xPosition + 4, optY + (height - 8) / 2, COL_TEXT);
         }
+
+        if (options.size() > MAX_VISIBLE_ITEMS) {
+            int scrollTrackH = listH - 4;
+            float ratio = (float) MAX_VISIBLE_ITEMS / options.size();
+            int thumbH = Math.max(10, (int) (ratio * scrollTrackH));
+            float scrollProgress = (float) scrollOffset / (options.size() - MAX_VISIBLE_ITEMS);
+            int thumbY = listY + 2 + (int) (scrollProgress * (scrollTrackH - thumbH));
+            drawRect(xPosition + width - 4, thumbY, xPosition + width - 1, thumbY + thumbH, COL_SCROLLBAR);
+        }
+
+        GL11.glPopMatrix();
     }
 
     public void handleMouseWheel(int dWheel) {
         if (!isExpanded || options.size() <= MAX_VISIBLE_ITEMS) return;
 
-        if (dWheel > 0) { // Scroll up
+        if (dWheel > 0) {
             scrollOffset = Math.max(0, scrollOffset - 1);
-        } else if (dWheel < 0) { // Scroll down
+        } else if (dWheel < 0) {
             scrollOffset = Math.min(options.size() - MAX_VISIBLE_ITEMS, scrollOffset + 1);
         }
     }
@@ -138,11 +136,9 @@ public class GuiComboBox extends Gui {
     public boolean mouseClicked(int mouseX, int mouseY, int mouseButton) {
         if (!this.visible || !this.isEnabled) return false;
 
-        // Check toggle
         if (mouseX >= xPosition && mouseX < xPosition + width && mouseY >= yPosition && mouseY < yPosition + height) {
             isExpanded = !isExpanded;
             if (isExpanded) {
-                // Reset scroll when opening
                 scrollOffset = Math
                     .max(0, Math.min(selectedIndex - MAX_VISIBLE_ITEMS / 2, options.size() - MAX_VISIBLE_ITEMS));
             }
@@ -150,7 +146,6 @@ public class GuiComboBox extends Gui {
             return true;
         }
 
-        // Check selection if expanded
         if (isExpanded) {
             int visibleCount = Math.min(options.size(), MAX_VISIBLE_ITEMS);
             int listH = visibleCount * height;
@@ -167,7 +162,6 @@ public class GuiComboBox extends Gui {
                 }
             }
 
-            // Click outside -> close
             isExpanded = false;
         }
 
@@ -175,9 +169,9 @@ public class GuiComboBox extends Gui {
     }
 
     private void drawHollowRect(int x, int y, int w, int h, int color) {
-        drawRect(x, y, x + w, y + 1, color); // Top
-        drawRect(x, y + h - 1, x + w, y + h, color); // Bottom
-        drawRect(x, y, x + 1, y + h, color); // Left
-        drawRect(x + w - 1, y, x + w, y + h, color); // Right
+        drawRect(x, y, x + w, y + 1, color);
+        drawRect(x, y + h - 1, x + w, y + h, color);
+        drawRect(x, y, x + 1, y + h, color);
+        drawRect(x + w - 1, y, x + w, y + h, color);
     }
 }

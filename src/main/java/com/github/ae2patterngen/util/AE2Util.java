@@ -39,11 +39,10 @@ public class AE2Util {
      * 这确保了 PacketResolveConflicts 的 Handler 在初始化时不会直接触碰到 AE2 的内部类。
      */
     private static boolean internalWirelessConsume(EntityPlayerMP player, int requiredCount, ItemStack blankPattern,
-            ItemStack heldItem) {
+        ItemStack heldItem) {
         IWirelessTermHandler handler = (IWirelessTermHandler) heldItem.getItem();
         String key = handler.getEncryptionKey(heldItem);
-        if (key == null || key.isEmpty())
-            return false;
+        if (key == null || key.isEmpty()) return false;
 
         long serial;
         try {
@@ -53,28 +52,28 @@ public class AE2Util {
         }
 
         Object obj = AEApi.instance()
-                .registries()
-                .locatable()
-                .getLocatableBy(serial);
+            .registries()
+            .locatable()
+            .getLocatableBy(serial);
 
         if (obj instanceof IActionHost) {
             IGrid grid = ((IActionHost) obj).getActionableNode()
-                    .getGrid();
+                .getGrid();
             if (grid != null) {
                 IStorageGrid storage = grid.getCache(IStorageGrid.class);
                 IMEMonitor<IAEItemStack> inventory = storage.getItemInventory();
                 IAEItemStack required = AEApi.instance()
-                        .storage()
-                        .createItemStack(blankPattern)
-                        .setStackSize(requiredCount);
+                    .storage()
+                    .createItemStack(blankPattern)
+                    .setStackSize(requiredCount);
 
                 IAEItemStack available = inventory
-                        .extractItems(required, Actionable.SIMULATE, new PlayerSource(player, null));
+                    .extractItems(required, Actionable.SIMULATE, new PlayerSource(player, null));
 
                 if (available != null && available.getStackSize() >= requiredCount) {
                     inventory.extractItems(required, Actionable.MODULATE, new PlayerSource(player, null));
                     player.addChatMessage(
-                            new ChatComponentText(EnumChatFormatting.AQUA + "[AE2PatternGen] 已从绑定的 ME 网络中无线提取空白样板。"));
+                        new ChatComponentText(EnumChatFormatting.AQUA + "[AE2PatternGen] 已从绑定的 ME 网络中无线提取空白样板。"));
                     return true;
                 }
             }

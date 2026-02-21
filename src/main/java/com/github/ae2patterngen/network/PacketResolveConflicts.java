@@ -13,6 +13,7 @@ import com.github.ae2patterngen.encoder.PatternEncoder;
 import com.github.ae2patterngen.recipe.RecipeEntry;
 import com.github.ae2patterngen.storage.PatternStorage;
 import com.github.ae2patterngen.util.AE2Util;
+
 import cpw.mods.fml.common.network.simpleimpl.IMessage;
 import cpw.mods.fml.common.network.simpleimpl.IMessageHandler;
 import cpw.mods.fml.common.network.simpleimpl.MessageContext;
@@ -26,8 +27,7 @@ public class PacketResolveConflicts implements IMessage {
     public int recipeIndex;
     public boolean cancel;
 
-    public PacketResolveConflicts() {
-    }
+    public PacketResolveConflicts() {}
 
     public PacketResolveConflicts(int recipeIndex, boolean cancel) {
         this.recipeIndex = recipeIndex;
@@ -54,13 +54,12 @@ public class PacketResolveConflicts implements IMessage {
             UUID uuid = player.getUniqueID();
             ConflictSession session = ConflictSession.get(uuid);
 
-            if (session == null)
-                return null;
+            if (session == null) return null;
 
             if (message.cancel) {
                 ConflictSession.stop(uuid);
                 player.addChatMessage(
-                        new ChatComponentText(EnumChatFormatting.YELLOW + "[AE2PatternGen] 放弃本次生成,可进行更详细的筛选避免重复样板"));
+                    new ChatComponentText(EnumChatFormatting.YELLOW + "[AE2PatternGen] 放弃本次生成,可进行更详细的筛选避免重复样板"));
                 return null;
             }
 
@@ -73,10 +72,10 @@ public class PacketResolveConflicts implements IMessage {
             } else {
                 // 发送下一个冲突
                 PacketRecipeConflicts nextPacket = new PacketRecipeConflicts(
-                        session.getCurrentProduct(),
-                        session.getCurrentIndex() + 1,
-                        session.getTotalConflicts(),
-                        session.getCurrentRecipes());
+                    session.getCurrentProduct(),
+                    session.getCurrentIndex() + 1,
+                    session.getTotalConflicts(),
+                    session.getCurrentRecipes());
                 NetworkHandler.INSTANCE.sendTo(nextPacket, player);
             }
 
@@ -89,8 +88,8 @@ public class PacketResolveConflicts implements IMessage {
                 Integer index = session.selections.get(key);
                 if (index != null) {
                     finalRecipes.add(
-                            session.conflictGroups.get(key)
-                                    .get(index));
+                        session.conflictGroups.get(key)
+                            .get(index));
                 }
             }
 
@@ -109,15 +108,14 @@ public class PacketResolveConflicts implements IMessage {
             ItemStack blankPattern = com.github.ae2patterngen.util.InventoryUtil.getBlankPattern();
             boolean consumed = performConsumption(player, requiredCount, blankPattern);
 
-            if (!consumed)
-                return;
+            if (!consumed) return;
 
             // 8. 写入虚拟仓储
             PatternStorage.save(player.getUniqueID(), patterns, session.recipeMapId);
 
             player.addChatMessage(
-                    new ChatComponentText(
-                            EnumChatFormatting.GREEN + "[AE2PatternGen] 已扣除 " + requiredCount + " 个空白样板并生成了等量成品。"));
+                new ChatComponentText(
+                    EnumChatFormatting.GREEN + "[AE2PatternGen] 已扣除 " + requiredCount + " 个空白样板并生成了等量成品。"));
             player.addChatMessage(new ChatComponentText(EnumChatFormatting.GRAY + "成品已存入仓储! 蹲下右键空气查看，蹲下右键容器导出。"));
         }
 
@@ -129,11 +127,11 @@ public class PacketResolveConflicts implements IMessage {
                 if (!com.github.ae2patterngen.util.InventoryUtil.consumeItem(player, blankPattern, requiredCount)) {
                     int currentHas = com.github.ae2patterngen.util.InventoryUtil.countItem(player, blankPattern);
                     player.addChatMessage(
-                            new ChatComponentText(
-                                    EnumChatFormatting.RED + "[AE2PatternGen] 生成失败: 空白样板不足。需要 "
-                                            + requiredCount
-                                            + " 但只有 "
-                                            + currentHas));
+                        new ChatComponentText(
+                            EnumChatFormatting.RED + "[AE2PatternGen] 生成失败: 空白样板不足。需要 "
+                                + requiredCount
+                                + " 但只有 "
+                                + currentHas));
                     return false;
                 }
                 consumed = true;
