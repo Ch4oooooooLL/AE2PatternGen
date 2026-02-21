@@ -161,65 +161,71 @@ public class ItemPatternGenerator extends Item implements INetworkEncodable, IWi
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public void addInformation(ItemStack stack, EntityPlayer player, List list, boolean advanced) {
         if (Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) || Keyboard.isKeyDown(Keyboard.KEY_RSHIFT)) {
-            list.add(EnumChatFormatting.YELLOW + "[\u529F\u80FD]"); // [功能]
+            list.add(EnumChatFormatting.YELLOW + "[功能特性]");
             list.add(
-                EnumChatFormatting.GRAY + "1. "
+                EnumChatFormatting.GRAY + "(1) "
                     + EnumChatFormatting.WHITE
-                    + "\u6279\u91CF\u751F\u6210"
+                    + "批量编码"
                     + EnumChatFormatting.GRAY
-                    + ": \u8F93\u5165 ID \u5339\u914D\u5E76\u6279\u91CF\u751F\u6210\u914D\u65B9\u6837\u677F");
+                    + ": 将 GregTech 机器配方批量导出为 AE2 处理模式样板");
             list.add(
-                EnumChatFormatting.GRAY + "2. "
+                EnumChatFormatting.GRAY + "(2) "
                     + EnumChatFormatting.WHITE
-                    + "\u667A\u80FD\u8FC7\u6EE4"
+                    + "智能过滤"
                     + EnumChatFormatting.GRAY
-                    + ": \u652F\u6301\u6B63\u5219\u7B5B\u9009\u4E0E\u9ED1\u540D\u5355");
+                    + ": 支持正则匹配、材料替换与电压等级匹配限制");
             list.add(
-                EnumChatFormatting.GRAY + "3. "
+                EnumChatFormatting.GRAY + "(3) "
                     + EnumChatFormatting.WHITE
-                    + "\u865A\u62DF\u4ED3\u50A8"
+                    + "配方冲突"
                     + EnumChatFormatting.GRAY
-                    + ": \u7ED3\u679C\u5B58\u5165\u5185\u7F6E\u786C\u76D8\uFF0C\u4E0D\u5360\u80CC\u5305");
+                    + ": 遇到多个匹配配方时支持通过手动 GUI 进行挑选");
             list.add(
-                EnumChatFormatting.GRAY + "4. "
+                EnumChatFormatting.GRAY + "(4) "
                     + EnumChatFormatting.WHITE
-                    + "\u81EA\u52A8\u66FF\u6362"
+                    + "虚拟仓储"
                     + EnumChatFormatting.GRAY
-                    + ": \u652F\u6301\u914D\u7F6E\u77FF\u8F9E\u66FF\u6362\u89C4\u5219");
+                    + ": 样板生成后存于内部虚拟硬盘，不占用玩家背包");
             list.add(
-                EnumChatFormatting.GRAY + "5. "
+                EnumChatFormatting.GRAY + "(5) "
                     + EnumChatFormatting.WHITE
-                    + "\u7B49\u4EF7\u6D88\u8017"
+                    + "等价消耗"
                     + EnumChatFormatting.GRAY
-                    + ": \u751F\u6210\u65F6\u9700\u6D88\u8017\u80CC\u5305\u5185\u7684\u7A7A\u767D\u6837\u677F");
+                    + ": 自动从绑定的 ME 网络或背包中扣除空白样板");
             list.add("");
-            list.add(EnumChatFormatting.YELLOW + "[\u64CD\u4F5C]"); // [操作]
+            list.add(EnumChatFormatting.YELLOW + "[操作方式]");
             list.add(
                 EnumChatFormatting.GRAY + "- "
                     + EnumChatFormatting.WHITE
-                    + "\u53F3\u952E (\u5BF9\u7740\u7A7A\u6C14)"
+                    + "右键 (空气)"
                     + EnumChatFormatting.GRAY
-                    + ": \u6253\u5F00\u751F\u6210\u914D\u7F6E\u754C\u9762");
+                    + ": 打开 生成配置界面");
             list.add(
                 EnumChatFormatting.GRAY + "- "
                     + EnumChatFormatting.WHITE
-                    + "Shift+\u53F3\u952E (\u5BF9\u7740\u7A7A\u6C14)"
+                    + "Shift+右键 (空气)"
                     + EnumChatFormatting.GRAY
-                    + ": \u6253\u5F00\u6837\u677F\u4ED3\u50A8\u754C\u9762");
+                    + ": 打开 虚拟样板管理器");
             list.add(
                 EnumChatFormatting.GRAY + "- "
                     + EnumChatFormatting.WHITE
-                    + "Shift+\u53F3\u952E (\u5BF9\u7740\u5BB9\u5668)"
+                    + "Shift+右键 (容器)"
                     + EnumChatFormatting.GRAY
-                    + ": \u5BFC\u51FA\u6837\u677F\u5230\u8BE5\u5BB9\u5668");
+                    + ": 将虚拟样板批量注入目标物理容器");
+            list.add(
+                EnumChatFormatting.GRAY + "- "
+                    + EnumChatFormatting.WHITE
+                    + "网络绑定"
+                    + EnumChatFormatting.GRAY
+                    + ": 通过安全终端与ME网络进行绑定");
         } else {
-            list.add(EnumChatFormatting.GRAY + "\u53F3\u952E\u6253\u5F00\u751F\u6210\u5668 GUI");
+            list.add(EnumChatFormatting.GRAY + "右键打开生成器 GUI");
             list.add(
-                EnumChatFormatting.GRAY + "\u6309\u4F4F "
+                EnumChatFormatting.GRAY + "按住 "
                     + EnumChatFormatting.AQUA
                     + "Shift"
                     + EnumChatFormatting.GRAY
-                    + " \u67E5\u770B\u8BE6\u7EC6\u529F\u80FD");
+                    + " 查看详细功能");
         }
     }
 
