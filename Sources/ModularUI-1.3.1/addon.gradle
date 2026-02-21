@@ -1,9 +1,0 @@
-compileJava {
-    options.encoding = "UTF-8"
-}
-test {
-    useJUnitPlatform()
-    testLogging {
-        events "passed", "skipped", "failed"
-    }
-}
