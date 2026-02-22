@@ -9,6 +9,7 @@ import net.minecraft.client.renderer.texture.IIconRegister;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.IInventory;
+import net.minecraft.inventory.ISidedInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -163,11 +164,17 @@ public class ItemPatternGenerator extends Item implements INetworkEncodable, IWi
         List<ItemStack> remainingPatterns = new ArrayList<>(patterns.size());
         int transferred = 0;
 
-        for (ItemStack pattern : patterns) {
-            if (tryInsertPattern(inv, pattern)) {
+        for (int i = 0; i < patterns.size(); i++) {
+            ItemStack pattern = patterns.get(i);
+            if (tryInsertPattern(inv, pattern, side)) {
                 transferred++;
             } else {
                 remainingPatterns.add(pattern);
+                // No slot can accept this pattern now; keep all remaining entries untouched.
+                for (int j = i + 1; j < patterns.size(); j++) {
+                    remainingPatterns.add(patterns.get(j));
+                }
+                break;
             }
         }
 
@@ -214,31 +221,113 @@ public class ItemPatternGenerator extends Item implements INetworkEncodable, IWi
         return null;
     }
 
-    private static boolean tryInsertPattern(IInventory inv, ItemStack pattern) {
+    private static boolean tryInsertPattern(IInventory inv, ItemStack pattern, int side) {
         if (inv == null || pattern == null) return false;
 
-        for (int slot = 0; slot < inv.getSizeInventory(); slot++) {
-            if (inv.getStackInSlot(slot) != null) {
+        int[] candidateSlots = resolveInsertSlots(inv, side);
+        for (int slot : candidateSlots) {
+            if (slot < 0 || slot >= inv.getSizeInventory()) {
                 continue;
             }
 
-            boolean canInsert;
+            ItemStack existing;
             try {
-                canInsert = inv.isItemValidForSlot(slot, pattern);
+                existing = inv.getStackInSlot(slot);
             } catch (Throwable ignored) {
-                canInsert = false;
+                continue;
             }
-            if (!canInsert) {
+            if (existing != null) {
                 continue;
             }
 
-            inv.setInventorySlotContents(slot, pattern.copy());
-            if (inv.getStackInSlot(slot) != null) {
+            if (!canInsertIntoSlot(inv, slot, pattern, side)) {
+                continue;
+            }
+
+            ItemStack inserted = pattern.copy();
+            if (inserted.stackSize <= 0) {
+                inserted.stackSize = 1;
+            }
+            int limit = Math.max(1, Math.min(inv.getInventoryStackLimit(), inserted.getMaxStackSize()));
+            inserted.stackSize = Math.min(inserted.stackSize, limit);
+
+            try {
+                inv.setInventorySlotContents(slot, inserted);
+            } catch (Throwable ignored) {
+                continue;
+            }
+
+            ItemStack after;
+            try {
+                after = inv.getStackInSlot(slot);
+            } catch (Throwable ignored) {
+                after = null;
+            }
+            if (isInsertedAsExpected(after, inserted)) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    private static boolean canInsertIntoSlot(IInventory inv, int slot, ItemStack pattern, int side) {
+        boolean validForSlot;
+        try {
+            validForSlot = inv.isItemValidForSlot(slot, pattern);
+        } catch (Throwable ignored) {
+            validForSlot = false;
+        }
+        if (!validForSlot) {
+            return false;
+        }
+
+        if (inv instanceof ISidedInventory) {
+            try {
+                return ((ISidedInventory) inv).canInsertItem(slot, pattern, normalizeSide(side));
+            } catch (Throwable ignored) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static int[] resolveInsertSlots(IInventory inv, int side) {
+        if (inv instanceof ISidedInventory) {
+            try {
+                int[] sidedSlots = ((ISidedInventory) inv).getAccessibleSlotsFromSide(normalizeSide(side));
+                if (sidedSlots != null && sidedSlots.length > 0) {
+                    return sidedSlots;
+                }
+            } catch (Throwable ignored) {}
+        }
+
+        int size = Math.max(0, inv.getSizeInventory());
+        int[] slots = new int[size];
+        for (int i = 0; i < size; i++) {
+            slots[i] = i;
+        }
+        return slots;
+    }
+
+    private static int normalizeSide(int side) {
+        return side >= 0 && side <= 5 ? side : 0;
+    }
+
+    private static boolean isInsertedAsExpected(ItemStack actual, ItemStack expected) {
+        if (actual == null || expected == null) {
+            return false;
+        }
+        if (actual.getItem() != expected.getItem()) {
+            return false;
+        }
+        if (actual.getItemDamage() != expected.getItemDamage()) {
+            return false;
+        }
+        if (!ItemStack.areItemStackTagsEqual(actual, expected)) {
+            return false;
+        }
+        return actual.stackSize >= expected.stackSize;
     }
 
     @Override

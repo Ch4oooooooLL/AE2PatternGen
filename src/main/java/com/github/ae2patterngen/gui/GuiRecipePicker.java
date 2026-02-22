@@ -129,6 +129,7 @@ public class GuiRecipePicker {
             int rowY = i * (ROW_H + ROW_GAP);
 
             ButtonWidget previewBtn = new ButtonWidget();
+            previewBtn.setSynced(false, false);
             previewBtn.setPos(2, rowY + 1);
             previewBtn.setSize(previewBtnW, ROW_H);
             previewBtn.setBackground(com.gtnewhorizons.modularui.api.ModularUITextures.VANILLA_BUTTON_NORMAL);
@@ -179,6 +180,7 @@ public class GuiRecipePicker {
 
             int selectBtnX = 2 + previewBtnW + 4;
             ButtonWidget selectBtn = new ButtonWidget();
+            selectBtn.setSynced(false, false);
             selectBtn.setPos(selectBtnX, rowY + 1);
             selectBtn.setSize(SELECT_BTN_W, ROW_H);
             selectBtn.setBackground(com.gtnewhorizons.modularui.api.ModularUITextures.VANILLA_BUTTON_NORMAL);
@@ -243,6 +245,7 @@ public class GuiRecipePicker {
         builder.widget(candidateList);
 
         ButtonWidget detailPanel = new ButtonWidget();
+        detailPanel.setSynced(false, false);
         detailPanel.setPos(rightX, topY);
         detailPanel.setSize(rightW, contentH);
         detailPanel.setBackground(new Rectangle().setColor(0xD0141422));
@@ -274,6 +277,7 @@ public class GuiRecipePicker {
         final int cancelBtnY = guiH - 24;
 
         ButtonWidget cancelBtn = new ButtonWidget();
+        cancelBtn.setSynced(false, false);
         cancelBtn.setPos(cancelBtnX, cancelBtnY);
         cancelBtn.setSize(cancelBtnW, cancelBtnH);
         cancelBtn.setBackground(com.gtnewhorizons.modularui.api.ModularUITextures.VANILLA_BUTTON_NORMAL);
