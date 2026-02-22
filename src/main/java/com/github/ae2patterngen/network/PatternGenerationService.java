@@ -39,7 +39,10 @@ public final class PatternGenerationService {
         }
 
         UUID uuid = player.getUniqueID();
-        PatternStorage.save(uuid, patterns, source);
+        if (!PatternStorage.save(uuid, patterns, source)) {
+            player.addChatMessage(new ChatComponentText(EnumChatFormatting.RED + "[AE2PatternGen] 仓储写入失败，请稍后重试"));
+            return false;
+        }
         player.addChatMessage(
             new ChatComponentText(
                 EnumChatFormatting.GREEN + "[AE2PatternGen] 已扣除 " + requiredCount + " 个空白样板并生成了等量成品。"));

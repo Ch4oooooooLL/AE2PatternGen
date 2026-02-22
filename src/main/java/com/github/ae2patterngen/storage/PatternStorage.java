@@ -3,6 +3,9 @@ package com.github.ae2patterngen.storage;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -33,11 +36,16 @@ public class PatternStorage {
     /**
      * 保存样板列表到文件
      */
-    public static void save(UUID playerUUID, List<ItemStack> patterns, String source) {
+    public static boolean save(UUID playerUUID, List<ItemStack> patterns, String source) {
+        File tmpFile = null;
         try {
             File file = getStorageFile(playerUUID);
-            file.getParentFile()
-                .mkdirs();
+            File parent = file.getParentFile();
+            if (parent != null && !parent.exists() && !parent.mkdirs()) {
+                System.err
+                    .println("[AE2PatternGen] Failed to create pattern storage directory: " + parent.getAbsolutePath());
+                return false;
+            }
 
             NBTTagCompound root = new NBTTagCompound();
             NBTTagList list = new NBTTagList();
@@ -54,9 +62,27 @@ public class PatternStorage {
             root.setString(KEY_SOURCE, source != null ? source : "");
             root.setLong(KEY_TIMESTAMP, System.currentTimeMillis());
 
-            CompressedStreamTools.writeCompressed(root, new FileOutputStream(file));
+            tmpFile = new File(file.getParentFile(), file.getName() + ".tmp");
+            try (FileOutputStream fos = new FileOutputStream(tmpFile)) {
+                CompressedStreamTools.writeCompressed(root, fos);
+            }
+
+            try {
+                Files.move(
+                    tmpFile.toPath(),
+                    file.toPath(),
+                    StandardCopyOption.REPLACE_EXISTING,
+                    StandardCopyOption.ATOMIC_MOVE);
+            } catch (AtomicMoveNotSupportedException e) {
+                Files.move(tmpFile.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            }
+            return true;
         } catch (Exception e) {
             System.err.println("[AE2PatternGen] Failed to save pattern storage: " + e.getMessage());
+            if (tmpFile != null && tmpFile.exists()) {
+                tmpFile.delete();
+            }
+            return false;
         }
     }
 
@@ -69,14 +95,31 @@ public class PatternStorage {
             File file = getStorageFile(playerUUID);
             if (!file.exists()) return patterns;
 
-            NBTTagCompound root = CompressedStreamTools.readCompressed(new FileInputStream(file));
+            NBTTagCompound root;
+            try (FileInputStream fis = new FileInputStream(file)) {
+                root = CompressedStreamTools.readCompressed(fis);
+            }
+            String source = root.getString(KEY_SOURCE);
             NBTTagList list = root.getTagList(KEY_PATTERNS, 10); // 10 = NBTTagCompound
+            boolean repaired = false;
 
             for (int i = 0; i < list.tagCount(); i++) {
                 ItemStack stack = ItemStack.loadItemStackFromNBT(list.getCompoundTagAt(i));
                 if (stack != null) {
+                    if (stack.stackSize <= 0) {
+                        stack.stackSize = 1;
+                        repaired = true;
+                    }
+                    if (normalizePatternCounts(stack)) {
+                        repaired = true;
+                    }
                     patterns.add(stack);
                 }
+            }
+
+            // 自动修复历史坏样板（负数/1L/Cnt-Count 不一致）并回写
+            if (repaired) {
+                save(playerUUID, patterns, source);
             }
         } catch (Exception e) {
             System.err.println("[AE2PatternGen] Failed to load pattern storage: " + e.getMessage());
@@ -92,7 +135,10 @@ public class PatternStorage {
             File file = getStorageFile(playerUUID);
             if (!file.exists()) return StorageSummary.EMPTY;
 
-            NBTTagCompound root = CompressedStreamTools.readCompressed(new FileInputStream(file));
+            NBTTagCompound root;
+            try (FileInputStream fis = new FileInputStream(file)) {
+                root = CompressedStreamTools.readCompressed(fis);
+            }
             int count = root.getInteger(KEY_COUNT);
             String source = root.getString(KEY_SOURCE);
             long timestamp = root.getLong(KEY_TIMESTAMP);
@@ -154,7 +200,9 @@ public class PatternStorage {
         } else {
             // 重新保存剩余的
             StorageSummary summary = getSummary(playerUUID);
-            save(playerUUID, all, summary.source);
+            if (!save(playerUUID, all, summary.source)) {
+                System.err.println("[AE2PatternGen] Failed to persist remaining patterns after extract.");
+            }
         }
 
         return extracted;
@@ -175,7 +223,9 @@ public class PatternStorage {
             clear(playerUUID);
         } else {
             StorageSummary summary = getSummary(playerUUID);
-            save(playerUUID, all, summary.source);
+            if (!save(playerUUID, all, summary.source)) {
+                System.err.println("[AE2PatternGen] Failed to persist remaining patterns after delete.");
+            }
         }
 
         return removed;
@@ -193,7 +243,10 @@ public class PatternStorage {
             File file = getStorageFile(playerUUID);
             if (!file.exists()) return StorageSummary.EMPTY;
 
-            NBTTagCompound root = CompressedStreamTools.readCompressed(new FileInputStream(file));
+            NBTTagCompound root;
+            try (FileInputStream fis = new FileInputStream(file)) {
+                root = CompressedStreamTools.readCompressed(fis);
+            }
             int count = root.getInteger(KEY_COUNT);
             String source = root.getString(KEY_SOURCE);
             long timestamp = root.getLong(KEY_TIMESTAMP);
@@ -242,6 +295,9 @@ public class PatternStorage {
                             ? inList.getCompoundTagAt(i)
                                 .getLong("Cnt")
                             : item.stackSize;
+                    if (cnt <= 0) {
+                        cnt = 1;
+                    }
                     inputs.add(item.getDisplayName() + " x" + cnt);
                 }
             }
@@ -255,6 +311,9 @@ public class PatternStorage {
                             ? outList.getCompoundTagAt(i)
                                 .getLong("Cnt")
                             : item.stackSize;
+                    if (cnt <= 0) {
+                        cnt = 1;
+                    }
                     outputs.add(item.getDisplayName() + " x" + cnt);
                 }
             }
@@ -288,6 +347,9 @@ public class PatternStorage {
                         ? outList.getCompoundTagAt(i)
                             .getLong("Cnt")
                         : item.stackSize;
+                if (cnt <= 0) {
+                    cnt = 1;
+                }
                 sb.append(item.getDisplayName());
                 if (cnt > 1) sb.append(" x")
                     .append(cnt);
@@ -295,6 +357,51 @@ public class PatternStorage {
         }
 
         return sb.length() > 0 ? sb.toString() : pattern.getDisplayName();
+    }
+
+    /**
+     * 修复旧版本样板中可能出现的计数字段异常（负数、Count/Cnt 不一致）。
+     */
+    private static boolean normalizePatternCounts(ItemStack pattern) {
+        if (pattern == null || !pattern.hasTagCompound()) {
+            return false;
+        }
+        NBTTagCompound root = pattern.getTagCompound();
+        boolean changed = false;
+        changed |= normalizePatternSide(root.getTagList("in", 10));
+        changed |= normalizePatternSide(root.getTagList("out", 10));
+        return changed;
+    }
+
+    private static boolean normalizePatternSide(NBTTagList list) {
+        boolean changed = false;
+        for (int i = 0; i < list.tagCount(); i++) {
+            NBTTagCompound itemTag = list.getCompoundTagAt(i);
+            int count = itemTag.getInteger("Count");
+            long cnt = itemTag.hasKey("Cnt") ? itemTag.getLong("Cnt") : Long.MIN_VALUE;
+
+            int target = (cnt > 0) ? clampToPositiveInt(cnt) : count;
+            if (target <= 0) {
+                target = 1;
+            }
+
+            if (!itemTag.hasKey("Count") || count != target) {
+                itemTag.setInteger("Count", target);
+                changed = true;
+            }
+            if (!itemTag.hasKey("Cnt") || cnt != (long) target) {
+                itemTag.setLong("Cnt", target);
+                changed = true;
+            }
+        }
+        return changed;
+    }
+
+    private static int clampToPositiveInt(long value) {
+        if (value <= 0) {
+            return 1;
+        }
+        return value > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) value;
     }
 
     private static File getStorageFile(UUID playerUUID) {

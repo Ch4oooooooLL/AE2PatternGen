@@ -47,33 +47,14 @@ public class PatternEncoder {
 
         // 物品输入
         for (ItemStack input : recipe.inputs) {
-            if (input == null) continue;
-            if (input.stackSize <= 0) continue;
-
-            NBTTagCompound itemTag = new NBTTagCompound();
-            input.writeToNBT(itemTag);
-            if (input.stackSize > 127) {
-                itemTag.setLong("Cnt", input.stackSize);
-                // 覆盖由于 byte((>127)) 产生的负数，防止在读取为原版 ItemStack 时被判定为空
-                itemTag.setByte("Count", (byte) 1);
-            }
-            inList.appendTag(itemTag);
+            appendStackTag(inList, input);
         }
 
         // 流体输入 -> ItemFluidDrop
         for (FluidStack fluid : recipe.fluidInputs) {
             if (fluid == null || fluid.amount <= 0) continue;
             ItemStack fluidItem = convertFluidToItem(fluid);
-            if (fluidItem != null) {
-                NBTTagCompound itemTag = new NBTTagCompound();
-                fluidItem.writeToNBT(itemTag);
-                if (fluidItem.stackSize > 127) {
-                    itemTag.setLong("Cnt", fluidItem.stackSize);
-                    // 覆盖由于 byte((>127)) 产生的负数，防止被误判为空物品栈
-                    itemTag.setByte("Count", (byte) 1);
-                }
-                inList.appendTag(itemTag);
-            }
+            appendStackTag(inList, fluidItem);
         }
 
         // ---- 编码输出 ----
@@ -81,32 +62,14 @@ public class PatternEncoder {
 
         // 物品输出
         for (ItemStack output : recipe.outputs) {
-            if (output == null) continue;
-
-            NBTTagCompound itemTag = new NBTTagCompound();
-            output.writeToNBT(itemTag);
-            if (output.stackSize > 127) {
-                itemTag.setLong("Cnt", output.stackSize);
-                // 覆盖负数问题
-                itemTag.setByte("Count", (byte) 1);
-            }
-            outList.appendTag(itemTag);
+            appendStackTag(outList, output);
         }
 
         // 流体输出 -> ItemFluidDrop
         for (FluidStack fluid : recipe.fluidOutputs) {
             if (fluid == null || fluid.amount <= 0) continue;
             ItemStack fluidItem = convertFluidToItem(fluid);
-            if (fluidItem != null) {
-                NBTTagCompound itemTag = new NBTTagCompound();
-                fluidItem.writeToNBT(itemTag);
-                if (fluidItem.stackSize > 127) {
-                    itemTag.setLong("Cnt", fluidItem.stackSize);
-                    // 覆盖由于 byte((>127)) 产生的负数，防止被误判为空物品栈
-                    itemTag.setByte("Count", (byte) 1);
-                }
-                outList.appendTag(itemTag);
-            }
+            appendStackTag(outList, fluidItem);
         }
 
         // 验证：至少要有一个输入和一个输出
@@ -134,6 +97,28 @@ public class PatternEncoder {
             }
         }
         return patterns;
+    }
+
+    /**
+     * 将 ItemStack 以 AE2 可正确解析的大数量格式写入样板 NBT。
+     * <p>
+     * AE2 的 Pattern 解析逻辑读取的是 int 类型的 "Count"，不是 "Cnt"。
+     */
+    private static void appendStackTag(NBTTagList targetList, ItemStack stack) {
+        if (stack == null || stack.stackSize <= 0) {
+            return;
+        }
+
+        NBTTagCompound itemTag = new NBTTagCompound();
+        stack.writeToNBT(itemTag);
+
+        // 保持 Count 为 int，避免 >127 时因 byte 溢出被误读为 1 或负数
+        itemTag.setInteger("Count", stack.stackSize);
+
+        // 同步写入 Cnt 兼容字段，避免不同读取路径出现计数分歧
+        itemTag.setLong("Cnt", stack.stackSize);
+
+        targetList.appendTag(itemTag);
     }
 
     /**

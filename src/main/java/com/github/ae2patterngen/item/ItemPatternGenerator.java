@@ -1,6 +1,7 @@
 package com.github.ae2patterngen.item;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -157,43 +158,34 @@ public class ItemPatternGenerator extends Item implements INetworkEncodable, IWi
         }
 
         IInventory inv = (IInventory) te;
+        PatternStorage.StorageSummary storageSummary = PatternStorage.getSummary(uuid);
         List<ItemStack> patterns = PatternStorage.load(uuid);
+        List<ItemStack> remainingPatterns = new ArrayList<>(patterns.size());
         int transferred = 0;
 
-        java.util.Iterator<ItemStack> it = patterns.iterator();
-        while (it.hasNext()) {
-            ItemStack pattern = it.next();
-            boolean inserted = false;
-
-            for (int slot = 0; slot < inv.getSizeInventory(); slot++) {
-                if (inv.getStackInSlot(slot) == null && inv.isItemValidForSlot(slot, pattern)) {
-                    inv.setInventorySlotContents(slot, pattern);
-                    it.remove();
-                    transferred++;
-                    inserted = true;
-                    break;
-                }
-            }
-
-            if (!inserted) {
-                // 容器已满
-                break;
+        for (ItemStack pattern : patterns) {
+            if (tryInsertPattern(inv, pattern)) {
+                transferred++;
+            } else {
+                remainingPatterns.add(pattern);
             }
         }
 
         // 更新存储
-        if (patterns.isEmpty()) {
+        if (remainingPatterns.isEmpty()) {
             PatternStorage.clear(uuid);
         } else {
-            PatternStorage.StorageSummary summary = PatternStorage.getSummary(uuid);
-            PatternStorage.save(uuid, patterns, summary.source);
+            if (!PatternStorage.save(uuid, remainingPatterns, storageSummary.source)) {
+                player.addChatMessage(new ChatComponentText(EnumChatFormatting.RED + "[AE2PatternGen] 仓储更新失败，请稍后重试"));
+                return true;
+            }
         }
 
         inv.markDirty();
 
         String msg = EnumChatFormatting.GREEN + "[AE2PatternGen] 已导出 " + transferred + " 个样板到容器";
-        if (!patterns.isEmpty()) {
-            msg += EnumChatFormatting.GRAY + " (剩余 " + patterns.size() + " 个)";
+        if (!remainingPatterns.isEmpty()) {
+            msg += EnumChatFormatting.GRAY + " (剩余 " + remainingPatterns.size() + " 个)";
         }
         player.addChatMessage(new ChatComponentText(msg));
 
@@ -220,6 +212,33 @@ public class ItemPatternGenerator extends Item implements INetworkEncodable, IWi
         }
 
         return null;
+    }
+
+    private static boolean tryInsertPattern(IInventory inv, ItemStack pattern) {
+        if (inv == null || pattern == null) return false;
+
+        for (int slot = 0; slot < inv.getSizeInventory(); slot++) {
+            if (inv.getStackInSlot(slot) != null) {
+                continue;
+            }
+
+            boolean canInsert;
+            try {
+                canInsert = inv.isItemValidForSlot(slot, pattern);
+            } catch (Throwable ignored) {
+                canInsert = false;
+            }
+            if (!canInsert) {
+                continue;
+            }
+
+            inv.setInventorySlotContents(slot, pattern.copy());
+            if (inv.getStackInSlot(slot) != null) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     @Override
