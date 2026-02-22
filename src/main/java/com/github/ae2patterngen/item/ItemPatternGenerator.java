@@ -163,10 +163,11 @@ public class ItemPatternGenerator extends Item implements INetworkEncodable, IWi
         List<ItemStack> patterns = PatternStorage.load(uuid);
         List<ItemStack> remainingPatterns = new ArrayList<>(patterns.size());
         int transferred = 0;
+        List<InsertAttemptPlan> insertPlans = buildInsertPlans(inv, side);
 
         for (int i = 0; i < patterns.size(); i++) {
             ItemStack pattern = patterns.get(i);
-            if (tryInsertPattern(inv, pattern, side)) {
+            if (tryInsertPattern(inv, pattern, insertPlans)) {
                 transferred++;
             } else {
                 remainingPatterns.add(pattern);
@@ -221,35 +222,42 @@ public class ItemPatternGenerator extends Item implements INetworkEncodable, IWi
         return null;
     }
 
-    private static boolean tryInsertPattern(IInventory inv, ItemStack pattern, int side) {
-        if (inv == null || pattern == null) return false;
+    private static boolean tryInsertPattern(IInventory inv, ItemStack pattern, List<InsertAttemptPlan> plans) {
+        if (inv == null || pattern == null || plans == null || plans.isEmpty()) return false;
+        for (InsertAttemptPlan plan : plans) {
+            if (tryInsertPatternWithPlan(inv, pattern, plan)) {
+                return true;
+            }
+        }
+        return false;
+    }
 
-        int[] candidateSlots = resolveInsertSlots(inv, side);
-        for (int slot : candidateSlots) {
+    private static boolean tryInsertPatternWithPlan(IInventory inv, ItemStack pattern, InsertAttemptPlan plan) {
+        if (plan == null || plan.slots == null || plan.slots.length == 0) {
+            return false;
+        }
+        ISidedInventory sided = plan.requireSidedCheck && inv instanceof ISidedInventory ? (ISidedInventory) inv : null;
+
+        for (int slot : plan.slots) {
             if (slot < 0 || slot >= inv.getSizeInventory()) {
                 continue;
             }
 
-            ItemStack existing;
-            try {
-                existing = inv.getStackInSlot(slot);
-            } catch (Throwable ignored) {
-                continue;
-            }
+            ItemStack existing = safeGetStack(inv, slot);
             if (existing != null) {
                 continue;
             }
-
-            if (!canInsertIntoSlot(inv, slot, pattern, side)) {
+            if (!isItemValidForSlotSafe(inv, slot, pattern)) {
+                continue;
+            }
+            if (sided != null && !canInsertItemSafe(sided, slot, pattern, plan.side)) {
                 continue;
             }
 
-            ItemStack inserted = pattern.copy();
-            if (inserted.stackSize <= 0) {
-                inserted.stackSize = 1;
+            ItemStack inserted = normalizeInsertStack(inv, pattern);
+            if (inserted == null) {
+                continue;
             }
-            int limit = Math.max(1, Math.min(inv.getInventoryStackLimit(), inserted.getMaxStackSize()));
-            inserted.stackSize = Math.min(inserted.stackSize, limit);
 
             try {
                 inv.setInventorySlotContents(slot, inserted);
@@ -257,12 +265,7 @@ public class ItemPatternGenerator extends Item implements INetworkEncodable, IWi
                 continue;
             }
 
-            ItemStack after;
-            try {
-                after = inv.getStackInSlot(slot);
-            } catch (Throwable ignored) {
-                after = null;
-            }
+            ItemStack after = safeGetStack(inv, slot);
             if (isInsertedAsExpected(after, inserted)) {
                 return true;
             }
@@ -271,43 +274,87 @@ public class ItemPatternGenerator extends Item implements INetworkEncodable, IWi
         return false;
     }
 
-    private static boolean canInsertIntoSlot(IInventory inv, int slot, ItemStack pattern, int side) {
-        boolean validForSlot;
-        try {
-            validForSlot = inv.isItemValidForSlot(slot, pattern);
-        } catch (Throwable ignored) {
-            validForSlot = false;
-        }
-        if (!validForSlot) {
-            return false;
+    private static List<InsertAttemptPlan> buildInsertPlans(IInventory inv, int clickedSide) {
+        List<InsertAttemptPlan> plans = new ArrayList<>();
+        if (inv == null) {
+            return plans;
         }
 
+        int[] allSlots = buildAllSlots(inv);
         if (inv instanceof ISidedInventory) {
-            try {
-                return ((ISidedInventory) inv).canInsertItem(slot, pattern, normalizeSide(side));
-            } catch (Throwable ignored) {
-                return false;
+            ISidedInventory sided = (ISidedInventory) inv;
+            int normalizedClicked = normalizeSide(clickedSide);
+
+            addSidedPlan(plans, sided, normalizedClicked);
+            for (int side = 0; side <= 5; side++) {
+                if (side == normalizedClicked) continue;
+                addSidedPlan(plans, sided, side);
             }
+            // Compatibility fallback for inventories that expose non-standard sided behavior.
+            plans.add(new InsertAttemptPlan(allSlots, -1, false));
+        } else {
+            plans.add(new InsertAttemptPlan(allSlots, -1, false));
         }
-        return true;
+        return plans;
     }
 
-    private static int[] resolveInsertSlots(IInventory inv, int side) {
-        if (inv instanceof ISidedInventory) {
-            try {
-                int[] sidedSlots = ((ISidedInventory) inv).getAccessibleSlotsFromSide(normalizeSide(side));
-                if (sidedSlots != null && sidedSlots.length > 0) {
-                    return sidedSlots;
-                }
-            } catch (Throwable ignored) {}
-        }
+    private static void addSidedPlan(List<InsertAttemptPlan> plans, ISidedInventory sided, int side) {
+        int[] slots = getAccessibleSlotsSafe(sided, side);
+        if (slots.length == 0) return;
+        plans.add(new InsertAttemptPlan(slots, side, true));
+    }
 
+    private static int[] getAccessibleSlotsSafe(ISidedInventory inv, int side) {
+        try {
+            int[] slots = inv.getAccessibleSlotsFromSide(normalizeSide(side));
+            return slots != null ? slots : new int[0];
+        } catch (Throwable ignored) {
+            return new int[0];
+        }
+    }
+
+    private static int[] buildAllSlots(IInventory inv) {
         int size = Math.max(0, inv.getSizeInventory());
         int[] slots = new int[size];
         for (int i = 0; i < size; i++) {
             slots[i] = i;
         }
         return slots;
+    }
+
+    private static ItemStack safeGetStack(IInventory inv, int slot) {
+        try {
+            return inv.getStackInSlot(slot);
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    private static boolean isItemValidForSlotSafe(IInventory inv, int slot, ItemStack stack) {
+        try {
+            return inv.isItemValidForSlot(slot, stack);
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    private static boolean canInsertItemSafe(ISidedInventory inv, int slot, ItemStack stack, int side) {
+        try {
+            return inv.canInsertItem(slot, stack, normalizeSide(side));
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    private static ItemStack normalizeInsertStack(IInventory inv, ItemStack pattern) {
+        if (pattern == null) return null;
+        ItemStack inserted = pattern.copy();
+        if (inserted.stackSize <= 0) {
+            inserted.stackSize = 1;
+        }
+        int limit = Math.max(1, Math.min(inv.getInventoryStackLimit(), inserted.getMaxStackSize()));
+        inserted.stackSize = Math.min(inserted.stackSize, limit);
+        return inserted;
     }
 
     private static int normalizeSide(int side) {
@@ -328,6 +375,19 @@ public class ItemPatternGenerator extends Item implements INetworkEncodable, IWi
             return false;
         }
         return actual.stackSize >= expected.stackSize;
+    }
+
+    private static final class InsertAttemptPlan {
+
+        private final int[] slots;
+        private final int side;
+        private final boolean requireSidedCheck;
+
+        private InsertAttemptPlan(int[] slots, int side, boolean requireSidedCheck) {
+            this.slots = slots;
+            this.side = side;
+            this.requireSidedCheck = requireSidedCheck;
+        }
     }
 
     @Override
