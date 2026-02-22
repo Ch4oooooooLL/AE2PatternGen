@@ -33,6 +33,16 @@ public class NetworkHandler {
             PacketResolveConflicts.class,
             packetId++,
             Side.SERVER);
+        INSTANCE.registerMessage(
+            PacketRecipeConflictBatch.Handler.class,
+            PacketRecipeConflictBatch.class,
+            packetId++,
+            Side.CLIENT);
+        INSTANCE.registerMessage(
+            PacketResolveConflictsBatch.Handler.class,
+            PacketResolveConflictsBatch.class,
+            packetId++,
+            Side.SERVER);
     }
 
     public static void sendToServer(PacketGeneratePatterns packet) {

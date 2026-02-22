@@ -3,7 +3,9 @@ package com.github.ae2patterngen.network;
 import java.util.ArrayList;
 import java.util.List;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraftforge.fluids.FluidStack;
 
 import com.github.ae2patterngen.recipe.RecipeEntry;
@@ -49,16 +51,22 @@ public class PacketRecipeConflicts implements IMessage {
 
     @Override
     public void toBytes(ByteBuf buf) {
-        ByteBufUtils.writeUTF8String(buf, productName);
+        ByteBufUtils.writeUTF8String(buf, productName != null ? productName : "");
         buf.writeInt(currentIndex);
         buf.writeInt(totalConflicts);
-        buf.writeInt(recipes.size());
-        for (RecipeEntry re : recipes) {
+        List<RecipeEntry> safeRecipes = recipes != null ? recipes : new ArrayList<RecipeEntry>();
+        buf.writeInt(safeRecipes.size());
+        for (RecipeEntry re : safeRecipes) {
             writeRecipe(buf, re);
         }
     }
 
-    private void writeRecipe(ByteBuf buf, RecipeEntry re) {
+    static void writeRecipe(ByteBuf buf, RecipeEntry re) {
+        ByteBufUtils.writeUTF8String(buf, re.recipeMapId != null ? re.recipeMapId : "");
+        ByteBufUtils.writeUTF8String(buf, re.machineDisplayName != null ? re.machineDisplayName : "");
+        buf.writeInt(re.duration);
+        buf.writeInt(re.euPerTick);
+
         // 仅写出必要的显示信息
         writeItemStackArray(buf, re.inputs);
         writeItemStackArray(buf, re.outputs);
@@ -67,23 +75,38 @@ public class PacketRecipeConflicts implements IMessage {
         writeItemStackArray(buf, re.specialItems);
     }
 
-    private RecipeEntry readRecipe(ByteBuf buf) {
+    static RecipeEntry readRecipe(ByteBuf buf) {
+        String recipeMapId = ByteBufUtils.readUTF8String(buf);
+        String machineDisplayName = ByteBufUtils.readUTF8String(buf);
+        int duration = buf.readInt();
+        int euPerTick = buf.readInt();
         ItemStack[] inputs = readItemStackArray(buf);
         ItemStack[] outputs = readItemStackArray(buf);
         FluidStack[] fluidInputs = readFluidStackArray(buf);
         FluidStack[] fluidOutputs = readFluidStackArray(buf);
         ItemStack[] specialItems = readItemStackArray(buf);
-        return new RecipeEntry("conflict", "", "", inputs, outputs, fluidInputs, fluidOutputs, specialItems, 0, 0);
+        return new RecipeEntry(
+            "conflict",
+            recipeMapId,
+            machineDisplayName,
+            inputs,
+            outputs,
+            fluidInputs,
+            fluidOutputs,
+            specialItems,
+            duration,
+            euPerTick);
     }
 
-    private void writeItemStackArray(ByteBuf buf, ItemStack[] stacks) {
-        buf.writeInt(stacks.length);
-        for (ItemStack stack : stacks) {
+    static void writeItemStackArray(ByteBuf buf, ItemStack[] stacks) {
+        ItemStack[] safeStacks = stacks != null ? stacks : new ItemStack[0];
+        buf.writeInt(safeStacks.length);
+        for (ItemStack stack : safeStacks) {
             ByteBufUtils.writeItemStack(buf, stack);
         }
     }
 
-    private ItemStack[] readItemStackArray(ByteBuf buf) {
+    static ItemStack[] readItemStackArray(ByteBuf buf) {
         int len = buf.readInt();
         ItemStack[] stacks = new ItemStack[len];
         for (int i = 0; i < len; i++) {
@@ -92,30 +115,33 @@ public class PacketRecipeConflicts implements IMessage {
         return stacks;
     }
 
-    private void writeFluidStackArray(ByteBuf buf, FluidStack[] stacks) {
-        buf.writeInt(stacks.length);
-        for (FluidStack stack : stacks) {
-            if (stack != null) {
+    static void writeFluidStackArray(ByteBuf buf, FluidStack[] stacks) {
+        FluidStack[] safeStacks = stacks != null ? stacks : new FluidStack[0];
+        buf.writeInt(safeStacks.length);
+        for (FluidStack stack : safeStacks) {
+            if (stack != null && stack.getFluid() != null && stack.amount > 0) {
                 buf.writeBoolean(true);
-                ByteBufUtils.writeUTF8String(
-                    buf,
-                    stack.getFluid()
-                        .getName());
-                buf.writeInt(stack.amount);
+                NBTTagCompound fluidTag = new NBTTagCompound();
+                stack.writeToNBT(fluidTag);
+                ByteBufUtils.writeTag(buf, fluidTag);
             } else {
                 buf.writeBoolean(false);
             }
         }
     }
 
-    private FluidStack[] readFluidStackArray(ByteBuf buf) {
+    static FluidStack[] readFluidStackArray(ByteBuf buf) {
         int len = buf.readInt();
         FluidStack[] stacks = new FluidStack[len];
         for (int i = 0; i < len; i++) {
             if (buf.readBoolean()) {
-                String name = ByteBufUtils.readUTF8String(buf);
-                int amount = buf.readInt();
-                stacks[i] = new FluidStack(net.minecraftforge.fluids.FluidRegistry.getFluid(name), amount);
+                NBTTagCompound fluidTag = ByteBufUtils.readTag(buf);
+                if (fluidTag != null) {
+                    FluidStack fs = FluidStack.loadFluidStackFromNBT(fluidTag);
+                    if (fs != null && fs.getFluid() != null && fs.amount > 0) {
+                        stacks[i] = fs;
+                    }
+                }
             }
         }
         return stacks;
@@ -126,7 +152,8 @@ public class PacketRecipeConflicts implements IMessage {
         @Override
         @SideOnly(Side.CLIENT)
         public IMessage onMessage(PacketRecipeConflicts message, MessageContext ctx) {
-            com.github.ae2patterngen.gui.GuiRecipePicker.open(message);
+            Minecraft.getMinecraft()
+                .func_152344_a(() -> com.github.ae2patterngen.gui.GuiRecipePicker.open(message));
             return null;
         }
     }
