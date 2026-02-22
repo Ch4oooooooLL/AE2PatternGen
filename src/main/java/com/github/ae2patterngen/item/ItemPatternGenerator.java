@@ -1,6 +1,8 @@
 package com.github.ae2patterngen.item;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -46,6 +48,7 @@ public class ItemPatternGenerator extends Item implements INetworkEncodable, IWi
 
     public static final int GUI_ID = 101;
     public static final int GUI_ID_STORAGE = 102;
+    private static final int MAX_PATTERN_TARGET_RESOLVE_DEPTH = 4;
 
     // NBT 键名
     public static final String NBT_RECIPE_MAP = "recipeMap";
@@ -139,7 +142,8 @@ public class ItemPatternGenerator extends Item implements INetworkEncodable, IWi
         }
 
         // 2. 如果不是 GT 主方块或探测失败，尝试作为普通容器导出样板
-        if (!(te instanceof IInventory)) {
+        PatternInsertTarget insertTarget = resolveInsertTarget(te);
+        if (insertTarget == null) {
             // 如果既不是可读取的 GT 机器也不是容器，提示错误
             if (te instanceof IGregTechTileEntity) {
                 player.addChatMessage(
@@ -158,12 +162,12 @@ public class ItemPatternGenerator extends Item implements INetworkEncodable, IWi
             return true;
         }
 
-        IInventory inv = (IInventory) te;
+        IInventory inv = insertTarget.inventory;
         PatternStorage.StorageSummary storageSummary = PatternStorage.getSummary(uuid);
         List<ItemStack> patterns = PatternStorage.load(uuid);
         List<ItemStack> remainingPatterns = new ArrayList<>(patterns.size());
         int transferred = 0;
-        List<InsertAttemptPlan> insertPlans = buildInsertPlans(inv, side);
+        List<InsertAttemptPlan> insertPlans = buildInsertPlans(inv, side, insertTarget.preferredSlots);
 
         for (int i = 0; i < patterns.size(); i++) {
             ItemStack pattern = patterns.get(i);
@@ -222,6 +226,187 @@ public class ItemPatternGenerator extends Item implements INetworkEncodable, IWi
         return null;
     }
 
+    private static PatternInsertTarget resolveInsertTarget(TileEntity te) {
+        if (te == null) {
+            return null;
+        }
+
+        if (te instanceof IGregTechTileEntity) {
+            IGregTechTileEntity gt = (IGregTechTileEntity) te;
+            PatternInsertTarget gtTarget = resolveInsertTargetFromMetaTile(gt.getMetaTileEntity(), 0);
+            if (gtTarget != null) {
+                return gtTarget;
+            }
+        }
+
+        if (te instanceof IInventory) {
+            return new PatternInsertTarget((IInventory) te, null);
+        }
+
+        return null;
+    }
+
+    private static PatternInsertTarget resolveInsertTargetFromMetaTile(Object metaTile, int depth) {
+        if (metaTile == null || depth > MAX_PATTERN_TARGET_RESOLVE_DEPTH) {
+            return null;
+        }
+
+        IInventory patternInventory = resolvePatternInventory(metaTile);
+        if (patternInventory != null) {
+            return buildPatternInsertTarget(metaTile, patternInventory);
+        }
+
+        Object[] masters = new Object[] { invokeNoArg(metaTile, "getMasterSuper"), invokeNoArg(metaTile, "getMaster"),
+            invokeNoArg(metaTile, "getCraftingMaster") };
+        for (Object master : masters) {
+            if (master == null || master == metaTile) {
+                continue;
+            }
+            PatternInsertTarget nested = resolveInsertTargetFromMetaTile(master, depth + 1);
+            if (nested != null) {
+                return nested;
+            }
+        }
+
+        return null;
+    }
+
+    private static IInventory resolvePatternInventory(Object metaTile) {
+        Object patterns = invokeNoArg(metaTile, "getPatterns");
+        if (patterns instanceof IInventory) {
+            return (IInventory) patterns;
+        }
+        return null;
+    }
+
+    private static PatternInsertTarget buildPatternInsertTarget(Object metaTile, IInventory patternInventory) {
+        int invSize = Math.max(0, patternInventory.getSizeInventory());
+        int slotCircuit = readStaticIntField(metaTile.getClass(), "SLOT_CIRCUIT");
+        int patternCount = readStaticIntField(metaTile.getClass(), "MAX_PATTERN_COUNT");
+        int preferredLimit = -1;
+
+        if (slotCircuit > 0) {
+            preferredLimit = slotCircuit;
+        }
+        if (patternCount > 0) {
+            preferredLimit = preferredLimit > 0 ? Math.min(preferredLimit, patternCount) : patternCount;
+        }
+
+        int[] preferredSlots = null;
+        if (preferredLimit > 0 && invSize > 0) {
+            preferredSlots = buildRangeSlots(Math.min(preferredLimit, invSize));
+        }
+
+        return new PatternInsertTarget(patternInventory, preferredSlots);
+    }
+
+    private static Object invokeNoArg(Object target, String methodName) {
+        if (target == null || methodName == null || methodName.isEmpty()) {
+            return null;
+        }
+
+        Class<?> type = target.getClass();
+        while (type != null) {
+            try {
+                Method method = type.getDeclaredMethod(methodName);
+                method.setAccessible(true);
+                return method.invoke(target);
+            } catch (NoSuchMethodException ignored) {
+                type = type.getSuperclass();
+            } catch (Throwable ignored) {
+                return null;
+            }
+        }
+
+        return null;
+    }
+
+    private static int readStaticIntField(Class<?> type, String fieldName) {
+        Class<?> current = type;
+        while (current != null) {
+            try {
+                Field field = current.getDeclaredField(fieldName);
+                field.setAccessible(true);
+                if (!Modifier.isStatic(field.getModifiers())) {
+                    current = current.getSuperclass();
+                    continue;
+                }
+                return field.getInt(null);
+            } catch (NoSuchFieldException ignored) {
+                current = current.getSuperclass();
+            } catch (Throwable ignored) {
+                return -1;
+            }
+        }
+        return -1;
+    }
+
+    private static int[] buildRangeSlots(int count) {
+        if (count <= 0) {
+            return new int[0];
+        }
+        int[] slots = new int[count];
+        for (int i = 0; i < count; i++) {
+            slots[i] = i;
+        }
+        return slots;
+    }
+
+    private static int[] sanitizeSlots(int[] slots, int sizeLimit) {
+        if (slots == null || slots.length == 0 || sizeLimit <= 0) {
+            return new int[0];
+        }
+
+        boolean[] seen = new boolean[sizeLimit];
+        int count = 0;
+        for (int slot : slots) {
+            if (slot >= 0 && slot < sizeLimit && !seen[slot]) {
+                seen[slot] = true;
+                count++;
+            }
+        }
+
+        int[] sanitized = new int[count];
+        int idx = 0;
+        for (int slot : slots) {
+            if (slot >= 0 && slot < sizeLimit && seen[slot]) {
+                sanitized[idx++] = slot;
+                seen[slot] = false;
+            }
+        }
+        return sanitized;
+    }
+
+    private static int[] filterSlotsByAllowed(int[] slots, int[] allowedSlots, int sizeLimit) {
+        int[] sanitizedSlots = sanitizeSlots(slots, sizeLimit);
+        if (sanitizedSlots.length == 0 || allowedSlots == null) {
+            return sanitizedSlots;
+        }
+
+        boolean[] allowed = new boolean[sizeLimit];
+        for (int slot : allowedSlots) {
+            if (slot >= 0 && slot < sizeLimit) {
+                allowed[slot] = true;
+            }
+        }
+
+        int count = 0;
+        for (int slot : sanitizedSlots) {
+            if (allowed[slot]) {
+                count++;
+            }
+        }
+
+        int[] filtered = new int[count];
+        int idx = 0;
+        for (int slot : sanitizedSlots) {
+            if (allowed[slot]) {
+                filtered[idx++] = slot;
+            }
+        }
+        return filtered;
+    }
+
     private static boolean tryInsertPattern(IInventory inv, ItemStack pattern, List<InsertAttemptPlan> plans) {
         if (inv == null || pattern == null || plans == null || plans.isEmpty()) return false;
         for (InsertAttemptPlan plan : plans) {
@@ -274,21 +459,25 @@ public class ItemPatternGenerator extends Item implements INetworkEncodable, IWi
         return false;
     }
 
-    private static List<InsertAttemptPlan> buildInsertPlans(IInventory inv, int clickedSide) {
+    private static List<InsertAttemptPlan> buildInsertPlans(IInventory inv, int clickedSide, int[] preferredSlots) {
         List<InsertAttemptPlan> plans = new ArrayList<>();
         if (inv == null) {
             return plans;
         }
 
-        int[] allSlots = buildAllSlots(inv);
+        int[] allSlots = preferredSlots != null ? sanitizeSlots(preferredSlots, inv.getSizeInventory()) : null;
+        if (allSlots == null || allSlots.length == 0) {
+            allSlots = buildAllSlots(inv);
+        }
+
         if (inv instanceof ISidedInventory) {
             ISidedInventory sided = (ISidedInventory) inv;
             int normalizedClicked = normalizeSide(clickedSide);
 
-            addSidedPlan(plans, sided, normalizedClicked);
+            addSidedPlan(plans, sided, normalizedClicked, allSlots);
             for (int side = 0; side <= 5; side++) {
                 if (side == normalizedClicked) continue;
-                addSidedPlan(plans, sided, side);
+                addSidedPlan(plans, sided, side, allSlots);
             }
             // Compatibility fallback for inventories that expose non-standard sided behavior.
             plans.add(new InsertAttemptPlan(allSlots, -1, false));
@@ -298,8 +487,9 @@ public class ItemPatternGenerator extends Item implements INetworkEncodable, IWi
         return plans;
     }
 
-    private static void addSidedPlan(List<InsertAttemptPlan> plans, ISidedInventory sided, int side) {
-        int[] slots = getAccessibleSlotsSafe(sided, side);
+    private static void addSidedPlan(List<InsertAttemptPlan> plans, ISidedInventory sided, int side,
+        int[] allowedSlots) {
+        int[] slots = filterSlotsByAllowed(getAccessibleSlotsSafe(sided, side), allowedSlots, sided.getSizeInventory());
         if (slots.length == 0) return;
         plans.add(new InsertAttemptPlan(slots, side, true));
     }
@@ -387,6 +577,17 @@ public class ItemPatternGenerator extends Item implements INetworkEncodable, IWi
             this.slots = slots;
             this.side = side;
             this.requireSidedCheck = requireSidedCheck;
+        }
+    }
+
+    private static final class PatternInsertTarget {
+
+        private final IInventory inventory;
+        private final int[] preferredSlots;
+
+        private PatternInsertTarget(IInventory inventory, int[] preferredSlots) {
+            this.inventory = inventory;
+            this.preferredSlots = preferredSlots;
         }
     }
 
