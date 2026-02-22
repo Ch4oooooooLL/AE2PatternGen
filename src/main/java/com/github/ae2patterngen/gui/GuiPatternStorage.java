@@ -34,7 +34,7 @@ public class GuiPatternStorage {
 
         TextWidget titleText = new TextWidget(EnumChatFormatting.BOLD + "▸ 样板仓储");
         titleText.setScale(1.2f);
-        titleText.setSize(200, 20);
+        titleText.setSize(GUI_W - 16, 20);
         titleText.setPos(8, 8);
         builder.widget(titleText);
 

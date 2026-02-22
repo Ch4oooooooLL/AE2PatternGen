@@ -1,5 +1,6 @@
 package com.github.ae2patterngen.item;
 
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.UUID;
 
@@ -14,6 +15,7 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.IIcon;
+import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.world.World;
 
 import org.lwjgl.input.Keyboard;
@@ -25,13 +27,17 @@ import appeng.api.features.IWirelessTermHandler;
 import appeng.api.util.IConfigManager;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
+import gregtech.api.interfaces.metatileentity.IMetaTileEntity;
+import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
+import gregtech.api.interfaces.tileentity.RecipeMapWorkable;
+import gregtech.api.recipe.RecipeMap;
 
 /**
  * 样板生成器物品 — 三种交互模式:
  * <ul>
  * <li>正常右键 (空气) → 打开配置 GUI</li>
  * <li>蹲下右键 (空气) → 打开仓储 GUI</li>
- * <li>蹲下右键 (方块) → 导出样板到方块容器</li>
+ * <li>蹲下右键 (方块) → 检测方块属性，并尝试导出样板到容器</li>
  * </ul>
  */
 public class ItemPatternGenerator extends Item implements INetworkEncodable, IWirelessTermHandler {
@@ -73,6 +79,14 @@ public class ItemPatternGenerator extends Item implements INetworkEncodable, IWi
 
     @Override
     public ItemStack onItemRightClick(ItemStack stack, World world, EntityPlayer player) {
+        if (player.isSneaking()) {
+            // Sneak + right click on block should be handled by onItemUseFirst (detect/export), not storage GUI.
+            MovingObjectPosition hit = getMovingObjectPositionFromPlayer(world, player, false);
+            if (hit != null && hit.typeOfHit == MovingObjectPosition.MovingObjectType.BLOCK) {
+                return stack;
+            }
+        }
+
         if (!world.isRemote) {
             int guiId = player.isSneaking() ? GUI_ID_STORAGE : GUI_ID;
             cpw.mods.fml.common.FMLLog.info(
@@ -92,20 +106,50 @@ public class ItemPatternGenerator extends Item implements INetworkEncodable, IWi
     }
 
     /**
-     * 蹲下右键方块 → 导出样板到 IInventory
+     * 蹲下右键方块 → 探测机器配方或导出样板到容器
      */
     @Override
     public boolean onItemUseFirst(ItemStack stack, EntityPlayer player, World world, int x, int y, int z, int side,
         float hitX, float hitY, float hitZ) {
-        if (world.isRemote) return false;
         if (!player.isSneaking()) return false;
+        if (world.isRemote) return false;
 
         TileEntity te = world.getTileEntity(x, y, z);
-        if (!(te instanceof IInventory)) {
-            player.addChatMessage(new ChatComponentText(EnumChatFormatting.RED + "[AE2PatternGen] 该方块不支持存储"));
+        if (te == null) {
+            player.addChatMessage(new ChatComponentText(EnumChatFormatting.RED + "[AE2PatternGen] 该方块不支持探测属性"));
             return true;
         }
 
+        // 1. 尝试探测 GT 机器配方表 (优先级: 主方块/控制器)
+        if (te instanceof IGregTechTileEntity) {
+            IGregTechTileEntity gte = (IGregTechTileEntity) te;
+            IMetaTileEntity mte = gte.getMetaTileEntity();
+            RecipeMap<?> recipeMap = resolveRecipeMap(mte);
+            if (recipeMap != null) {
+                saveField(stack, NBT_RECIPE_MAP, recipeMap.unlocalizedName);
+                player.addChatMessage(
+                    new ChatComponentText(
+                        EnumChatFormatting.GREEN + "[AE2PatternGen] 已探测并记录配方表: "
+                            + EnumChatFormatting.WHITE
+                            + recipeMap.unlocalizedName));
+                return true;
+            }
+        }
+
+        // 2. 如果不是 GT 主方块或探测失败，尝试作为普通容器导出样板
+        if (!(te instanceof IInventory)) {
+            // 如果既不是可读取的 GT 机器也不是容器，提示错误
+            if (te instanceof IGregTechTileEntity) {
+                player.addChatMessage(
+                    new ChatComponentText(EnumChatFormatting.RED + "[AE2PatternGen] 该机器部件不支持探测配方或导出样板"));
+            } else {
+                player
+                    .addChatMessage(new ChatComponentText(EnumChatFormatting.RED + "[AE2PatternGen] 该方块不支持提取数据或样板导出"));
+            }
+            return true;
+        }
+
+        // 执行原有导出逻辑
         UUID uuid = player.getUniqueID();
         if (PatternStorage.isEmpty(uuid)) {
             player.addChatMessage(new ChatComponentText(EnumChatFormatting.YELLOW + "[AE2PatternGen] 仓储为空，无可导出的样板"));
@@ -153,7 +197,29 @@ public class ItemPatternGenerator extends Item implements INetworkEncodable, IWi
         }
         player.addChatMessage(new ChatComponentText(msg));
 
-        return true; // 消费事件，不打开方块自身 GUI
+        return true; // 消费事件
+    }
+
+    private static RecipeMap<?> resolveRecipeMap(IMetaTileEntity mte) {
+        if (mte == null) return null;
+
+        if (mte instanceof RecipeMapWorkable) {
+            return ((RecipeMapWorkable) mte).getRecipeMap();
+        }
+
+        // Some GT multi-block controllers expose getRecipeMap() but do not implement RecipeMapWorkable.
+        try {
+            Method method = mte.getClass()
+                .getMethod("getRecipeMap");
+            Object result = method.invoke(mte);
+            if (result instanceof RecipeMap<?>) {
+                return (RecipeMap<?>) result;
+            }
+        } catch (Throwable ignored) {
+            // Fall through to null when the machine does not expose a recipe map.
+        }
+
+        return null;
     }
 
     @Override
@@ -209,9 +275,9 @@ public class ItemPatternGenerator extends Item implements INetworkEncodable, IWi
             list.add(
                 EnumChatFormatting.GRAY + "- "
                     + EnumChatFormatting.WHITE
-                    + "Shift+右键 (容器)"
+                    + "Shift+右键 (方块)"
                     + EnumChatFormatting.GRAY
-                    + ": 将虚拟样板批量注入目标物理容器");
+                    + ": 检测方块属性；若为容器则批量导出虚拟样板");
             list.add(
                 EnumChatFormatting.GRAY + "- "
                     + EnumChatFormatting.WHITE
@@ -220,6 +286,8 @@ public class ItemPatternGenerator extends Item implements INetworkEncodable, IWi
                     + ": 通过安全终端与ME网络进行绑定");
         } else {
             list.add(EnumChatFormatting.GRAY + "右键打开生成器 GUI");
+            list.add(EnumChatFormatting.GRAY + "Shift+右键空气打开仓储界面");
+            list.add(EnumChatFormatting.GRAY + "Shift+右键方块检测属性/导出样板");
             list.add(
                 EnumChatFormatting.GRAY + "按住 "
                     + EnumChatFormatting.AQUA
