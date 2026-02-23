@@ -1,5 +1,9 @@
 package com.github.ae2patterngen.proxy;
 
+import java.util.List;
+
+import net.minecraft.entity.player.EntityPlayer;
+
 import com.github.ae2patterngen.item.ModItems;
 import com.github.ae2patterngen.network.NetworkHandler;
 
@@ -47,5 +51,13 @@ public class CommonProxy {
                 cpw.mods.fml.common.registry.GameRegistry.findItem("appliedenergistics2", "item.ItemMultiPart"),
                 1,
                 340));
+    }
+
+    public void closeCurrentScreen() {
+        // Dedicated server: no GUI screen exists.
+    }
+
+    public void openPatternDetailScreen(EntityPlayer player, int index, List<String> inputs, List<String> outputs) {
+        // Dedicated server: no GUI screen exists.
     }
 }

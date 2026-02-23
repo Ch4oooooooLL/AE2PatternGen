@@ -84,6 +84,11 @@ AE2 Pattern Generator 是一个专为 Minecraft 1.7.10 (如 GregTech New Horizon
 
 ## 📜 更新日志
 
+### v1.4.1 (2026-02-23)
+- **修复**: 修复 `Shift + 右键` 打开存储界面时服务端崩溃 (`NoClassDefFoundError: net/minecraft/client/gui/GuiScreen`)。
+- **修复**: 将存储详情界面的客户端逻辑下沉到 `ClientProxy`，避免服务端路径加载客户端类。
+- **兼容**: 确认客户端与服务端同时安装时可正常打开 GUI 101/102，不再触发侧别加载错误。
+
 ### v1.3.6
 - **重构**: 重构冲突配方选择界面，优化冲突配方的批量展示与交互流程。
 

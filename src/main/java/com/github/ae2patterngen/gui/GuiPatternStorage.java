@@ -4,19 +4,16 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.EnumChatFormatting;
 
+import com.github.ae2patterngen.AE2PatternGen;
 import com.github.ae2patterngen.network.NetworkHandler;
 import com.github.ae2patterngen.network.PacketStorageAction;
 import com.github.ae2patterngen.storage.PatternStorage;
 import com.gtnewhorizons.modularui.api.drawable.shapes.Rectangle;
-import com.gtnewhorizons.modularui.api.screen.ModularUIContext;
 import com.gtnewhorizons.modularui.api.screen.ModularWindow;
 import com.gtnewhorizons.modularui.api.screen.UIBuildContext;
-import com.gtnewhorizons.modularui.common.internal.wrapper.ModularGui;
-import com.gtnewhorizons.modularui.common.internal.wrapper.ModularUIContainer;
 import com.gtnewhorizons.modularui.common.widget.ButtonWidget;
 import com.gtnewhorizons.modularui.common.widget.Scrollable;
 import com.gtnewhorizons.modularui.common.widget.TextWidget;
@@ -41,9 +38,7 @@ public class GuiPatternStorage {
         if (summary.count == 0) {
             String msg = "仓储为空，请先在配置 GUI 中生成样板";
             TextWidget emptyText = new TextWidget(msg);
-            // Rough centering based on character count approx if getStringWidth isn't
-            // available easily from here (but it is)
-            int strW = Minecraft.getMinecraft().fontRenderer.getStringWidth(msg);
+            int strW = approximateTextWidth(msg);
             emptyText.setPos(GUI_W / 2 - strW / 2, 40);
             builder.widget(emptyText);
         } else {
@@ -97,13 +92,7 @@ public class GuiPatternStorage {
                 rowBtn.setOnClick((cd, w) -> {
                     PatternStorage.PatternDetail detail = PatternStorage.getPatternDetail(player.getUniqueID(), index);
                     if (detail != null) {
-                        Minecraft.getMinecraft().thePlayer.closeScreen();
-                        UIBuildContext newContext = new UIBuildContext(player);
-                        ModularUIContext muiContext = new ModularUIContext(newContext, () -> {});
-                        ModularWindow detailWindow = GuiPatternDetail
-                            .createWindow(newContext, index, detail.inputs, detail.outputs);
-                        Minecraft.getMinecraft()
-                            .displayGuiScreen(new ModularGui(new ModularUIContainer(muiContext, detailWindow)));
+                        AE2PatternGen.proxy.openPatternDetailScreen(player, index, detail.inputs, detail.outputs);
                     }
                 });
 
@@ -126,7 +115,7 @@ public class GuiPatternStorage {
         btnExtText.setPos(GUI_W / 2 - btnW - 4 + 16, btnY + 6);
         btnExtract.setOnClick((cd, w) -> {
             NetworkHandler.INSTANCE.sendToServer(new PacketStorageAction(PacketStorageAction.ACTION_EXTRACT));
-            Minecraft.getMinecraft().thePlayer.closeScreen();
+            AE2PatternGen.proxy.closeCurrentScreen();
         });
         builder.widget(btnExtract);
         builder.widget(btnExtText);
@@ -139,7 +128,7 @@ public class GuiPatternStorage {
         btnClrText.setPos(GUI_W / 2 + 4 + 20, btnY + 6);
         btnClear.setOnClick((cd, w) -> {
             NetworkHandler.INSTANCE.sendToServer(new PacketStorageAction(PacketStorageAction.ACTION_CLEAR));
-            Minecraft.getMinecraft().thePlayer.closeScreen();
+            AE2PatternGen.proxy.closeCurrentScreen();
         });
         builder.widget(btnClear);
         builder.widget(btnClrText);
@@ -149,5 +138,12 @@ public class GuiPatternStorage {
         builder.widget(footerText);
 
         return builder.build();
+    }
+
+    private static int approximateTextWidth(String text) {
+        if (text == null || text.isEmpty()) {
+            return 0;
+        }
+        return text.length() * 6;
     }
 }
