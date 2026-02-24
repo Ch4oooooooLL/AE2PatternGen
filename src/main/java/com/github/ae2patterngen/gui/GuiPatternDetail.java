@@ -5,13 +5,11 @@ import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.EnumChatFormatting;
 
+import com.github.ae2patterngen.AE2PatternGen;
 import com.github.ae2patterngen.network.NetworkHandler;
 import com.github.ae2patterngen.network.PacketStorageAction;
-import com.gtnewhorizons.modularui.api.screen.ModularUIContext;
 import com.gtnewhorizons.modularui.api.screen.ModularWindow;
 import com.gtnewhorizons.modularui.api.screen.UIBuildContext;
-import com.gtnewhorizons.modularui.common.internal.wrapper.ModularGui;
-import com.gtnewhorizons.modularui.common.internal.wrapper.ModularUIContainer;
 import com.gtnewhorizons.modularui.common.widget.ButtonWidget;
 import com.gtnewhorizons.modularui.common.widget.Scrollable;
 import com.gtnewhorizons.modularui.common.widget.TextWidget;
@@ -90,7 +88,7 @@ public class GuiPatternDetail {
         btnDelete.setOnClick((cd, w) -> {
             NetworkHandler.INSTANCE
                 .sendToServer(new PacketStorageAction(PacketStorageAction.ACTION_DELETE, patternIndex));
-            Minecraft.getMinecraft().thePlayer.closeScreen();
+            AE2PatternGen.proxy.openPatternStorageScreen(Minecraft.getMinecraft().thePlayer);
         });
         builder.widget(btnDelete);
         builder.widget(btnDelText);
@@ -102,15 +100,7 @@ public class GuiPatternDetail {
         TextWidget btnBackText = new TextWidget("返回");
         btnBackText.setPos(GUI_W / 2 + 4 + 32, btnY + 6);
         btnBack.setOnClick((cd, w) -> {
-            Minecraft.getMinecraft().thePlayer.closeScreen();
-
-            // Reopen GUI
-            UIBuildContext newContext = new UIBuildContext(Minecraft.getMinecraft().thePlayer);
-            ModularUIContext muiContext = new ModularUIContext(newContext, () -> {});
-            ModularWindow storageWindow = GuiPatternStorage
-                .createWindow(newContext, Minecraft.getMinecraft().thePlayer);
-            Minecraft.getMinecraft()
-                .displayGuiScreen(new ModularGui(new ModularUIContainer(muiContext, storageWindow)));
+            AE2PatternGen.proxy.openPatternStorageScreen(Minecraft.getMinecraft().thePlayer);
         });
         builder.widget(btnBack);
         builder.widget(btnBackText);

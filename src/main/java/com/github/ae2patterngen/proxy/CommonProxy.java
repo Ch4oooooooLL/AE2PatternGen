@@ -60,4 +60,8 @@ public class CommonProxy {
     public void openPatternDetailScreen(EntityPlayer player, int index, List<String> inputs, List<String> outputs) {
         // Dedicated server: no GUI screen exists.
     }
+
+    public void openPatternStorageScreen(EntityPlayer player) {
+        // Dedicated server: no GUI screen exists.
+    }
 }
