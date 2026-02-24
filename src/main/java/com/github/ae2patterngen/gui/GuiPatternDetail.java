@@ -99,9 +99,8 @@ public class GuiPatternDetail {
         btnBack.setBackground(com.gtnewhorizons.modularui.api.ModularUITextures.VANILLA_BUTTON_NORMAL);
         TextWidget btnBackText = new TextWidget("返回");
         btnBackText.setPos(GUI_W / 2 + 4 + 32, btnY + 6);
-        btnBack.setOnClick((cd, w) -> {
-            AE2PatternGen.proxy.openPatternStorageScreen(Minecraft.getMinecraft().thePlayer);
-        });
+        btnBack.setOnClick(
+            (cd, w) -> { AE2PatternGen.proxy.openPatternStorageScreen(Minecraft.getMinecraft().thePlayer); });
         builder.widget(btnBack);
         builder.widget(btnBackText);
 

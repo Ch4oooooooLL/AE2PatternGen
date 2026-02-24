@@ -157,11 +157,11 @@ public class GuiPatternStorage {
                     rowText.setPos(4, listY + 3);
 
                     rowBtn.setOnClick((cd, w) -> {
-                        PatternStorage.PatternDetail detail = PatternStorage.getPatternDetail(
-                            player.getUniqueID(),
-                            actualIndex);
+                        PatternStorage.PatternDetail detail = PatternStorage
+                            .getPatternDetail(player.getUniqueID(), actualIndex);
                         if (detail != null) {
-                            AE2PatternGen.proxy.openPatternDetailScreen(player, actualIndex, detail.inputs, detail.outputs);
+                            AE2PatternGen.proxy
+                                .openPatternDetailScreen(player, actualIndex, detail.inputs, detail.outputs);
                         }
                     });
 
@@ -242,7 +242,8 @@ public class GuiPatternStorage {
         String loweredQuery = normalized.toLowerCase(Locale.ROOT);
         for (int i = 0; i < previews.size(); i++) {
             String preview = previews.get(i);
-            if (preview != null && preview.toLowerCase(Locale.ROOT).contains(loweredQuery)) {
+            if (preview != null && preview.toLowerCase(Locale.ROOT)
+                .contains(loweredQuery)) {
                 result.add(i);
             }
         }

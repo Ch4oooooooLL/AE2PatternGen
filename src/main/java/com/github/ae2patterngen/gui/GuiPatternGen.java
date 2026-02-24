@@ -177,8 +177,7 @@ public class GuiPatternGen {
         tfBlacklistOut.setTextAlignment(com.gtnewhorizons.modularui.api.math.Alignment.CenterLeft);
         scrollable.widget(tfBlacklistOut);
 
-        TextWidget regexHint = new TextWidget(
-            EnumChatFormatting.DARK_GRAY + "支持正则：输出矿辞 / 输入矿辞 / NC 物品 / 黑名单");
+        TextWidget regexHint = new TextWidget(EnumChatFormatting.DARK_GRAY + "支持正则：输出矿辞 / 输入矿辞 / NC 物品 / 黑名单");
         regexHint.setPos(6, refY + 50 + 3);
         scrollable.widget(regexHint);
 
