@@ -6,6 +6,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayer;
 
 import com.github.ae2patterngen.gui.GuiPatternDetail;
+import com.github.ae2patterngen.gui.GuiPatternStorage;
 import com.gtnewhorizons.modularui.api.screen.ModularUIContext;
 import com.gtnewhorizons.modularui.api.screen.ModularWindow;
 import com.gtnewhorizons.modularui.api.screen.UIBuildContext;
@@ -50,5 +51,23 @@ public class ClientProxy extends CommonProxy {
         ModularUIContext muiContext = new ModularUIContext(buildContext, () -> {});
         ModularWindow detailWindow = GuiPatternDetail.createWindow(buildContext, index, inputs, outputs);
         mc.displayGuiScreen(new ModularGui(new ModularUIContainer(muiContext, detailWindow)));
+    }
+
+    @Override
+    public void openPatternStorageScreen(EntityPlayer player) {
+        Minecraft mc = Minecraft.getMinecraft();
+        EntityPlayer uiPlayer = player != null ? player : mc.thePlayer;
+        if (uiPlayer == null) {
+            return;
+        }
+
+        if (mc.thePlayer != null) {
+            mc.thePlayer.closeScreen();
+        }
+
+        UIBuildContext buildContext = new UIBuildContext(uiPlayer);
+        ModularUIContext muiContext = new ModularUIContext(buildContext, () -> {});
+        ModularWindow storageWindow = GuiPatternStorage.createWindow(buildContext, uiPlayer);
+        mc.displayGuiScreen(new ModularGui(new ModularUIContainer(muiContext, storageWindow)));
     }
 }

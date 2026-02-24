@@ -132,7 +132,7 @@ public class GuiPatternGen {
         btnTier.setBackground(new Rectangle().setColor(0xFF1E1E30));
 
         TextWidget btnTierText = new TextWidget("");
-        btnTierText.setStringSupplier(() -> tiers.get(currentTierIndex[0]));
+        btnTierText.setStringSupplier(() -> EnumChatFormatting.WHITE + tiers.get(currentTierIndex[0]));
         btnTierText.setPos(inputX + 4, refY + 68 + 3);
 
         btnTier.setOnClick((clickData, widget) -> {
@@ -177,7 +177,12 @@ public class GuiPatternGen {
         tfBlacklistOut.setTextAlignment(com.gtnewhorizons.modularui.api.math.Alignment.CenterLeft);
         scrollable.widget(tfBlacklistOut);
 
-        refY += 50;
+        TextWidget regexHint = new TextWidget(
+            EnumChatFormatting.DARK_GRAY + "支持正则：输出矿辞 / 输入矿辞 / NC 物品 / 黑名单");
+        regexHint.setPos(6, refY + 50 + 3);
+        scrollable.widget(regexHint);
+
+        refY += 62;
 
         int loadedRuleCount = com.github.ae2patterngen.config.ReplacementConfig.load();
 
