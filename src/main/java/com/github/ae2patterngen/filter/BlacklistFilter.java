@@ -2,7 +2,9 @@ package com.github.ae2patterngen.filter;
 
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
+import java.util.regex.Matcher;
 
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.oredict.OreDictionary;
 
@@ -13,6 +15,8 @@ import com.github.ae2patterngen.recipe.RecipeEntry;
  */
 public class BlacklistFilter implements IRecipeFilter {
 
+    private static final Pattern ID_TOKEN_PATTERN = Pattern.compile("\\[(\\d+)(?::(\\d+))?\\]");
+
     private final String keyword;
     private final Pattern compiledPattern;
     private final boolean checkInputs;
@@ -22,13 +26,7 @@ public class BlacklistFilter implements IRecipeFilter {
         this.keyword = keyword;
         this.checkInputs = checkInputs;
         this.checkOutputs = checkOutputs;
-        Pattern p = null;
-        try {
-            p = Pattern.compile(keyword, Pattern.CASE_INSENSITIVE);
-        } catch (PatternSyntaxException e) {
-            p = Pattern.compile(Pattern.quote(keyword), Pattern.CASE_INSENSITIVE);
-        }
-        this.compiledPattern = p;
+        this.compiledPattern = compileKeyword(keyword);
     }
 
     @Override
@@ -57,20 +55,81 @@ public class BlacklistFilter implements IRecipeFilter {
     private boolean isMatch(ItemStack stack) {
         if (stack == null) return false;
 
-        // 1. 匹配名称
         String displayName = stack.getDisplayName();
-        if (compiledPattern.matcher(displayName)
-            .find()) return true;
+        String[] oreNames = getOreNames(stack);
 
-        // 2. 匹配矿辞
-        int[] oreIds = OreDictionary.getOreIDs(stack);
-        for (int oreId : oreIds) {
-            String oreName = OreDictionary.getOreName(oreId);
-            if (compiledPattern.matcher(oreName)
-                .find()) return true;
+        int itemId = -1;
+        int meta = -1;
+        Item item = stack.getItem();
+        if (item != null) {
+            itemId = Item.getIdFromItem(item);
+            meta = stack.getItemDamage();
         }
 
-        return false;
+        return matchesCompiledPattern(compiledPattern, displayName, itemId, meta, oreNames);
+    }
+
+    static Pattern compileKeyword(String keyword) {
+        String source = keyword != null ? keyword : "";
+        String regex = escapeIdTokens(source);
+        try {
+            return Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+        } catch (PatternSyntaxException e) {
+            return Pattern.compile(Pattern.quote(source), Pattern.CASE_INSENSITIVE);
+        }
+    }
+
+    static boolean matchesCompiledPattern(Pattern pattern, String displayName, int itemId, int meta, String[] oreNames) {
+        if (pattern == null) return false;
+
+        StringBuilder searchTarget = new StringBuilder();
+        appendPart(searchTarget, displayName);
+
+        if (oreNames != null) {
+            for (String oreName : oreNames) {
+                appendPart(searchTarget, oreName);
+            }
+        }
+
+        if (itemId >= 0) {
+            appendPart(searchTarget, "[" + itemId + "]");
+            if (meta >= 0) {
+                appendPart(searchTarget, "[" + itemId + ":" + meta + "]");
+            }
+        }
+
+        if (searchTarget.length() == 0) return false;
+        return pattern.matcher(searchTarget.toString())
+            .find();
+    }
+
+    private static String escapeIdTokens(String source) {
+        Matcher matcher = ID_TOKEN_PATTERN.matcher(source);
+        StringBuffer escaped = new StringBuffer();
+        while (matcher.find()) {
+            String token = matcher.group();
+            String quoted = Pattern.quote(token);
+            matcher.appendReplacement(escaped, Matcher.quoteReplacement(quoted));
+        }
+        matcher.appendTail(escaped);
+        return escaped.toString();
+    }
+
+    private static String[] getOreNames(ItemStack stack) {
+        int[] oreIds = OreDictionary.getOreIDs(stack);
+        String[] names = new String[oreIds.length];
+        for (int i = 0; i < oreIds.length; i++) {
+            names[i] = OreDictionary.getOreName(oreIds[i]);
+        }
+        return names;
+    }
+
+    private static void appendPart(StringBuilder builder, String value) {
+        if (value == null || value.isEmpty()) return;
+        if (builder.length() > 0) {
+            builder.append('\n');
+        }
+        builder.append(value);
     }
 
     @Override
