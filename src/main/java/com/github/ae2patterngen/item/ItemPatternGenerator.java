@@ -25,6 +25,7 @@ import net.minecraft.world.World;
 import org.lwjgl.input.Keyboard;
 
 import com.github.ae2patterngen.storage.PatternStorage;
+import com.github.ae2patterngen.util.I18nUtil;
 
 import appeng.api.features.INetworkEncodable;
 import appeng.api.features.IWirelessTermHandler;
@@ -121,7 +122,7 @@ public class ItemPatternGenerator extends Item implements INetworkEncodable, IWi
 
         TileEntity te = world.getTileEntity(x, y, z);
         if (te == null) {
-            player.addChatMessage(new ChatComponentText(EnumChatFormatting.RED + "[AE2PatternGen] 该方块不支持探测属性"));
+            player.addChatMessage(msg(EnumChatFormatting.RED, "ae2patterngen.msg.item.block_not_detectable"));
             return true;
         }
 
@@ -133,10 +134,10 @@ public class ItemPatternGenerator extends Item implements INetworkEncodable, IWi
             if (recipeMap != null) {
                 saveField(stack, NBT_RECIPE_MAP, recipeMap.unlocalizedName);
                 player.addChatMessage(
-                    new ChatComponentText(
-                        EnumChatFormatting.GREEN + "[AE2PatternGen] 已探测并记录配方表: "
-                            + EnumChatFormatting.WHITE
-                            + recipeMap.unlocalizedName));
+                    msg(
+                        EnumChatFormatting.GREEN,
+                        "ae2patterngen.msg.item.detected_recipe_map",
+                        recipeMap.unlocalizedName));
                 return true;
             }
         }
@@ -146,11 +147,9 @@ public class ItemPatternGenerator extends Item implements INetworkEncodable, IWi
         if (insertTarget == null) {
             // 如果既不是可读取的 GT 机器也不是容器，提示错误
             if (te instanceof IGregTechTileEntity) {
-                player.addChatMessage(
-                    new ChatComponentText(EnumChatFormatting.RED + "[AE2PatternGen] 该机器部件不支持探测配方或导出样板"));
+                player.addChatMessage(msg(EnumChatFormatting.RED, "ae2patterngen.msg.item.machine_part_unsupported"));
             } else {
-                player
-                    .addChatMessage(new ChatComponentText(EnumChatFormatting.RED + "[AE2PatternGen] 该方块不支持提取数据或样板导出"));
+                player.addChatMessage(msg(EnumChatFormatting.RED, "ae2patterngen.msg.item.block_extract_unsupported"));
             }
             return true;
         }
@@ -158,7 +157,7 @@ public class ItemPatternGenerator extends Item implements INetworkEncodable, IWi
         // 执行原有导出逻辑
         UUID uuid = player.getUniqueID();
         if (PatternStorage.isEmpty(uuid)) {
-            player.addChatMessage(new ChatComponentText(EnumChatFormatting.YELLOW + "[AE2PatternGen] 仓储为空，无可导出的样板"));
+            player.addChatMessage(msg(EnumChatFormatting.YELLOW, "ae2patterngen.msg.item.storage_empty_export"));
             return true;
         }
 
@@ -188,18 +187,23 @@ public class ItemPatternGenerator extends Item implements INetworkEncodable, IWi
             PatternStorage.clear(uuid);
         } else {
             if (!PatternStorage.save(uuid, remainingPatterns, storageSummary.source)) {
-                player.addChatMessage(new ChatComponentText(EnumChatFormatting.RED + "[AE2PatternGen] 仓储更新失败，请稍后重试"));
+                player.addChatMessage(msg(EnumChatFormatting.RED, "ae2patterngen.msg.item.storage_update_failed"));
                 return true;
             }
         }
 
         inv.markDirty();
 
-        String msg = EnumChatFormatting.GREEN + "[AE2PatternGen] 已导出 " + transferred + " 个样板到容器";
         if (!remainingPatterns.isEmpty()) {
-            msg += EnumChatFormatting.GRAY + " (剩余 " + remainingPatterns.size() + " 个)";
+            player.addChatMessage(
+                msg(
+                    EnumChatFormatting.GREEN,
+                    "ae2patterngen.msg.item.exported_with_remaining",
+                    transferred,
+                    remainingPatterns.size()));
+        } else {
+            player.addChatMessage(msg(EnumChatFormatting.GREEN, "ae2patterngen.msg.item.exported", transferred));
         }
-        player.addChatMessage(new ChatComponentText(msg));
 
         return true; // 消费事件
     }
@@ -596,74 +600,89 @@ public class ItemPatternGenerator extends Item implements INetworkEncodable, IWi
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public void addInformation(ItemStack stack, EntityPlayer player, List list, boolean advanced) {
         if (Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) || Keyboard.isKeyDown(Keyboard.KEY_RSHIFT)) {
-            list.add(EnumChatFormatting.YELLOW + "[功能特性]");
+            list.add(EnumChatFormatting.YELLOW + I18nUtil.tr("ae2patterngen.tooltip.feature.title"));
             list.add(
                 EnumChatFormatting.GRAY + "(1) "
                     + EnumChatFormatting.WHITE
-                    + "批量编码"
+                    + I18nUtil.tr("ae2patterngen.tooltip.feature.batch_encode")
                     + EnumChatFormatting.GRAY
-                    + ": 将 GregTech 机器配方批量导出为 AE2 处理模式样板");
+                    + ": "
+                    + I18nUtil.tr("ae2patterngen.tooltip.feature.batch_encode.desc"));
             list.add(
                 EnumChatFormatting.GRAY + "(2) "
                     + EnumChatFormatting.WHITE
-                    + "智能过滤"
+                    + I18nUtil.tr("ae2patterngen.tooltip.feature.smart_filter")
                     + EnumChatFormatting.GRAY
-                    + ": 支持正则匹配、材料替换与电压等级匹配限制");
+                    + ": "
+                    + I18nUtil.tr("ae2patterngen.tooltip.feature.smart_filter.desc"));
             list.add(
                 EnumChatFormatting.GRAY + "(3) "
                     + EnumChatFormatting.WHITE
-                    + "配方冲突"
+                    + I18nUtil.tr("ae2patterngen.tooltip.feature.conflict_resolution")
                     + EnumChatFormatting.GRAY
-                    + ": 遇到多个匹配配方时支持通过手动 GUI 进行挑选");
+                    + ": "
+                    + I18nUtil.tr("ae2patterngen.tooltip.feature.conflict_resolution.desc"));
             list.add(
                 EnumChatFormatting.GRAY + "(4) "
                     + EnumChatFormatting.WHITE
-                    + "虚拟仓储"
+                    + I18nUtil.tr("ae2patterngen.tooltip.feature.virtual_storage")
                     + EnumChatFormatting.GRAY
-                    + ": 样板生成后存于内部虚拟硬盘，不占用玩家背包");
+                    + ": "
+                    + I18nUtil.tr("ae2patterngen.tooltip.feature.virtual_storage.desc"));
             list.add(
                 EnumChatFormatting.GRAY + "(5) "
                     + EnumChatFormatting.WHITE
-                    + "等价消耗"
+                    + I18nUtil.tr("ae2patterngen.tooltip.feature.equivalent_consume")
                     + EnumChatFormatting.GRAY
-                    + ": 自动从绑定的 ME 网络或背包中扣除空白样板");
+                    + ": "
+                    + I18nUtil.tr("ae2patterngen.tooltip.feature.equivalent_consume.desc"));
             list.add("");
-            list.add(EnumChatFormatting.YELLOW + "[操作方式]");
+            list.add(EnumChatFormatting.YELLOW + I18nUtil.tr("ae2patterngen.tooltip.usage.title"));
             list.add(
                 EnumChatFormatting.GRAY + "- "
                     + EnumChatFormatting.WHITE
-                    + "右键 (空气)"
+                    + I18nUtil.tr("ae2patterngen.tooltip.usage.right_click_air")
                     + EnumChatFormatting.GRAY
-                    + ": 打开 生成配置界面");
+                    + ": "
+                    + I18nUtil.tr("ae2patterngen.tooltip.usage.right_click_air.desc"));
             list.add(
                 EnumChatFormatting.GRAY + "- "
                     + EnumChatFormatting.WHITE
-                    + "Shift+右键 (空气)"
+                    + I18nUtil.tr("ae2patterngen.tooltip.usage.shift_right_click_air")
                     + EnumChatFormatting.GRAY
-                    + ": 打开 虚拟样板管理器");
+                    + ": "
+                    + I18nUtil.tr("ae2patterngen.tooltip.usage.shift_right_click_air.desc"));
             list.add(
                 EnumChatFormatting.GRAY + "- "
                     + EnumChatFormatting.WHITE
-                    + "Shift+右键 (方块)"
+                    + I18nUtil.tr("ae2patterngen.tooltip.usage.shift_right_click_block")
                     + EnumChatFormatting.GRAY
-                    + ": 检测方块属性；若为容器则批量导出虚拟样板");
+                    + ": "
+                    + I18nUtil.tr("ae2patterngen.tooltip.usage.shift_right_click_block.desc"));
             list.add(
                 EnumChatFormatting.GRAY + "- "
                     + EnumChatFormatting.WHITE
-                    + "网络绑定"
+                    + I18nUtil.tr("ae2patterngen.tooltip.usage.network_binding")
                     + EnumChatFormatting.GRAY
-                    + ": 通过安全终端与ME网络进行绑定");
+                    + ": "
+                    + I18nUtil.tr("ae2patterngen.tooltip.usage.network_binding.desc"));
         } else {
-            list.add(EnumChatFormatting.GRAY + "右键打开生成器 GUI");
-            list.add(EnumChatFormatting.GRAY + "Shift+右键空气打开仓储界面");
-            list.add(EnumChatFormatting.GRAY + "Shift+右键方块检测属性/导出样板");
+            list.add(EnumChatFormatting.GRAY + I18nUtil.tr("ae2patterngen.tooltip.hint.quick_open"));
+            list.add(EnumChatFormatting.GRAY + I18nUtil.tr("ae2patterngen.tooltip.hint.quick_storage"));
+            list.add(EnumChatFormatting.GRAY + I18nUtil.tr("ae2patterngen.tooltip.hint.quick_detect_export"));
             list.add(
-                EnumChatFormatting.GRAY + "按住 "
+                EnumChatFormatting.GRAY + I18nUtil.tr("ae2patterngen.tooltip.hint.hold_shift_prefix")
+                    + " "
                     + EnumChatFormatting.AQUA
-                    + "Shift"
+                    + I18nUtil.tr("ae2patterngen.tooltip.key.shift")
                     + EnumChatFormatting.GRAY
-                    + " 查看详细功能");
+                    + " "
+                    + I18nUtil.tr("ae2patterngen.tooltip.hint.hold_shift"));
         }
+    }
+
+    private static ChatComponentText msg(EnumChatFormatting color, String key, Object... args) {
+        return new ChatComponentText(color + I18nUtil.tr(key, args));
     }
 
     public static String getSavedField(ItemStack stack, String key) {

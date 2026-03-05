@@ -9,6 +9,7 @@ import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.EnumChatFormatting;
 
 import com.github.ae2patterngen.storage.PatternStorage;
+import com.github.ae2patterngen.util.I18nUtil;
 
 import cpw.mods.fml.common.network.simpleimpl.IMessage;
 import cpw.mods.fml.common.network.simpleimpl.IMessageHandler;
@@ -73,8 +74,7 @@ public class PacketStorageAction implements IMessage {
 
         private void handleExtract(EntityPlayerMP player, UUID uuid) {
             if (PatternStorage.isEmpty(uuid)) {
-                player
-                    .addChatMessage(new ChatComponentText(EnumChatFormatting.YELLOW + "[AE2PatternGen] 仓储为空，无可取出的样板"));
+                send(player, EnumChatFormatting.YELLOW, "ae2patterngen.msg.storage.empty_extract");
                 return;
             }
 
@@ -87,7 +87,7 @@ public class PacketStorageAction implements IMessage {
             }
 
             if (freeSlots == 0) {
-                player.addChatMessage(new ChatComponentText(EnumChatFormatting.RED + "[AE2PatternGen] 背包已满，无法取出样板"));
+                send(player, EnumChatFormatting.RED, "ae2patterngen.msg.storage.inventory_full");
                 return;
             }
 
@@ -103,41 +103,47 @@ public class PacketStorageAction implements IMessage {
             player.sendContainerToPlayer(player.inventoryContainer);
 
             PatternStorage.StorageSummary remaining = PatternStorage.getSummary(uuid);
-            String msg = EnumChatFormatting.GREEN + "[AE2PatternGen] 已取出 " + added + " 个样板到背包";
             if (remaining.count > 0) {
-                msg += EnumChatFormatting.GRAY + " (剩余 " + remaining.count + " 个)";
+                send(
+                    player,
+                    EnumChatFormatting.GREEN,
+                    "ae2patterngen.msg.storage.extracted_with_remaining",
+                    added,
+                    remaining.count);
+            } else {
+                send(player, EnumChatFormatting.GREEN, "ae2patterngen.msg.storage.extracted", added);
             }
-            player.addChatMessage(new ChatComponentText(msg));
         }
 
         private void handleClear(EntityPlayerMP player, UUID uuid) {
             PatternStorage.StorageSummary summary = PatternStorage.getSummary(uuid);
             if (summary.count == 0) {
-                player.addChatMessage(new ChatComponentText(EnumChatFormatting.YELLOW + "[AE2PatternGen] 仓储已为空"));
+                send(player, EnumChatFormatting.YELLOW, "ae2patterngen.msg.storage.already_empty");
                 return;
             }
 
             PatternStorage.clear(uuid);
-            player.addChatMessage(
-                new ChatComponentText(EnumChatFormatting.GREEN + "[AE2PatternGen] 已清空 " + summary.count + " 个样板"));
+            send(player, EnumChatFormatting.GREEN, "ae2patterngen.msg.storage.cleared", summary.count);
         }
 
         private void handleDelete(EntityPlayerMP player, UUID uuid, int index) {
             ItemStack removed = PatternStorage.delete(uuid, index);
             if (removed == null) {
-                player.addChatMessage(new ChatComponentText(EnumChatFormatting.RED + "[AE2PatternGen] 删除失败: 索引无效"));
+                send(player, EnumChatFormatting.RED, "ae2patterngen.msg.storage.delete_invalid");
                 return;
             }
 
             PatternStorage.StorageSummary remaining = PatternStorage.getSummary(uuid);
-            player.addChatMessage(
-                new ChatComponentText(
-                    EnumChatFormatting.GREEN + "[AE2PatternGen] 已删除: "
-                        + removed.getDisplayName()
-                        + EnumChatFormatting.GRAY
-                        + " (剩余 "
-                        + remaining.count
-                        + " 个)"));
+            send(
+                player,
+                EnumChatFormatting.GREEN,
+                "ae2patterngen.msg.storage.deleted",
+                removed.getDisplayName(),
+                remaining.count);
+        }
+
+        private void send(EntityPlayerMP player, EnumChatFormatting color, String key, Object... args) {
+            player.addChatMessage(new ChatComponentText(color + I18nUtil.tr(key, args)));
         }
     }
 }

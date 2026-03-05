@@ -16,6 +16,7 @@ import com.github.ae2patterngen.filter.OutputOreDictFilter;
 import com.github.ae2patterngen.recipe.GTRecipeSource;
 import com.github.ae2patterngen.recipe.RecipeEntry;
 import com.github.ae2patterngen.storage.PatternStorage;
+import com.github.ae2patterngen.util.I18nUtil;
 
 import cpw.mods.fml.common.network.ByteBufUtils;
 import cpw.mods.fml.common.network.simpleimpl.IMessage;
@@ -87,28 +88,27 @@ public class PacketGeneratePatterns implements IMessage {
             // 检查仓储是否有残留样板
             if (!PatternStorage.isEmpty(uuid)) {
                 PatternStorage.StorageSummary existing = PatternStorage.getSummary(uuid);
-                player.addChatMessage(
-                    new ChatComponentText(
-                        EnumChatFormatting.RED + "[AE2PatternGen] 仓储中仍有 "
-                            + existing.count
-                            + " 个未清空的样板 (来源: "
-                            + existing.source
-                            + ")。请先蹲下右键查看并取出/清空后再生成新样板。"));
+                send(
+                    player,
+                    EnumChatFormatting.RED,
+                    "ae2patterngen.msg.generate.storage_not_empty",
+                    existing.count,
+                    existing.source);
                 return null;
             }
 
             // 1. 查找匹配的配方表
             List<String> matchedMaps = GTRecipeSource.findMatchingRecipeMaps(message.recipeMapId);
             if (matchedMaps.isEmpty()) {
-                player.addChatMessage(
-                    new ChatComponentText(
-                        EnumChatFormatting.RED + "[AE2PatternGen] 未找到匹配的配方表: " + message.recipeMapId));
+                send(player, EnumChatFormatting.RED, "ae2patterngen.msg.generate.no_matching_map", message.recipeMapId);
                 return null;
             }
 
-            player.addChatMessage(
-                new ChatComponentText(
-                    EnumChatFormatting.GRAY + "[AE2PatternGen] 匹配到配方表: " + String.join(", ", matchedMaps)));
+            send(
+                player,
+                EnumChatFormatting.GRAY,
+                "ae2patterngen.msg.generate.matched_maps",
+                String.join(", ", matchedMaps));
 
             // 2. 收集原始配方
             List<RecipeEntry> recipes = GTRecipeSource.collectRecipes(message.recipeMapId);
@@ -148,16 +148,15 @@ public class PacketGeneratePatterns implements IMessage {
                 }
             }
 
-            player.addChatMessage(
-                new ChatComponentText(
-                    EnumChatFormatting.GRAY + "[AE2PatternGen] 原始配方: "
-                        + totalBeforeFilter
-                        + ", 过滤后: "
-                        + filtered.size()));
+            send(
+                player,
+                EnumChatFormatting.GRAY,
+                "ae2patterngen.msg.generate.filter_result",
+                totalBeforeFilter,
+                filtered.size());
 
             if (filtered.isEmpty()) {
-                player.addChatMessage(
-                    new ChatComponentText(EnumChatFormatting.YELLOW + "[AE2PatternGen] 没有找到匹配的配方 (请检查正则/矿辞)"));
+                send(player, EnumChatFormatting.YELLOW, "ae2patterngen.msg.generate.no_match_after_filter");
                 return null;
             }
 
@@ -181,13 +180,13 @@ public class PacketGeneratePatterns implements IMessage {
                             recipe.euPerTick));
                 }
                 filtered = replaced;
-                player.addChatMessage(new ChatComponentText(EnumChatFormatting.GRAY + "[AE2PatternGen] 已应用矿辞替换规则"));
+                send(player, EnumChatFormatting.GRAY, "ae2patterngen.msg.generate.replacement_applied");
             }
 
             // [新增] 配方冲突检测与分组 (按产物显示名称)
             java.util.Map<String, List<RecipeEntry>> groups = new java.util.LinkedHashMap<>();
             for (RecipeEntry re : filtered) {
-                String key = "Unknown Item";
+                String key = I18nUtil.tr("ae2patterngen.msg.common.unknown_item");
                 if (re.outputs != null && re.outputs.length > 0 && re.outputs[0] != null) {
                     key = re.outputs[0].getDisplayName();
                 } else if (re.fluidOutputs != null && re.fluidOutputs.length > 0 && re.fluidOutputs[0] != null) {
@@ -211,9 +210,11 @@ public class PacketGeneratePatterns implements IMessage {
             if (!conflicts.isEmpty()) {
                 // 开启冲突处理会话
                 ConflictSession.start(uuid, message.recipeMapId, nonConflicts, conflicts);
-                player.addChatMessage(
-                    new ChatComponentText(
-                        EnumChatFormatting.YELLOW + "[AE2PatternGen] 检测到 " + conflicts.size() + " 组配方冲突，请进行人工选择..."));
+                send(
+                    player,
+                    EnumChatFormatting.YELLOW,
+                    "ae2patterngen.msg.generate.conflicts_detected",
+                    conflicts.size());
 
                 // 发送第一个冲突给客户端
                 ConflictSession session = ConflictSession.get(uuid);
@@ -223,6 +224,10 @@ public class PacketGeneratePatterns implements IMessage {
 
             PatternGenerationService.generateAndStore(player, message.recipeMapId, filtered);
             return null;
+        }
+
+        private void send(EntityPlayerMP player, EnumChatFormatting color, String key, Object... args) {
+            player.addChatMessage(new ChatComponentText(color + I18nUtil.tr(key, args)));
         }
     }
 }

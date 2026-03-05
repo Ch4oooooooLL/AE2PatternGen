@@ -1,1 +1,176 @@
 item.ae2patterngen.pattern_generator.name=Pattern Generator
+
+# Common
+ae2patterngen.gui.common.any=Any
+ae2patterngen.gui.common.back=Back
+ae2patterngen.gui.common.na=N/A
+ae2patterngen.gui.common.none=(None)
+ae2patterngen.gui.common.unknown=(Unknown)
+
+# Pattern Generator GUI
+ae2patterngen.gui.pattern_gen.title=AE2 Pattern Generator
+ae2patterngen.gui.pattern_gen.section.recipe=Recipe Setup
+ae2patterngen.gui.pattern_gen.section.filter=Filters
+ae2patterngen.gui.pattern_gen.label.output_ore=Output OreDict:
+ae2patterngen.gui.pattern_gen.label.input_ore=Input OreDict:
+ae2patterngen.gui.pattern_gen.label.nc_item=NC Item:
+ae2patterngen.gui.pattern_gen.label.tier=Voltage Tier:
+ae2patterngen.gui.pattern_gen.section.blacklist=Blacklist
+ae2patterngen.gui.pattern_gen.label.blacklist_input=Exclude Input:
+ae2patterngen.gui.pattern_gen.label.blacklist_output=Exclude Output:
+ae2patterngen.gui.pattern_gen.hint.regex=Regex supported: output ore / input ore / NC item / blacklist
+ae2patterngen.gui.pattern_gen.section.replacements=Replacement Rules
+ae2patterngen.gui.pattern_gen.replacements.count=Loaded %s rule(s)
+ae2patterngen.gui.pattern_gen.button.open_config=Open Config
+ae2patterngen.gui.pattern_gen.status.ready=● Ready
+ae2patterngen.gui.pattern_gen.button.list_maps=List Maps
+ae2patterngen.gui.pattern_gen.status.map_matches=● Matched Maps: %s
+ae2patterngen.gui.pattern_gen.button.preview_count=Preview Count
+ae2patterngen.gui.pattern_gen.status.recipes_before_filter=● Recipes Before Filter: %s
+ae2patterngen.gui.pattern_gen.button.generate=▶ Generate
+ae2patterngen.gui.pattern_gen.error.empty_map=Error: recipe map must not be empty
+ae2patterngen.gui.pattern_gen.status.generate_requested=● Generation request sent
+
+# Pattern Storage GUI
+ae2patterngen.gui.pattern_storage.title=▸ Pattern Storage
+ae2patterngen.gui.pattern_storage.empty=Storage is empty. Generate patterns in the config GUI first.
+ae2patterngen.gui.pattern_storage.stats.title=Stats
+ae2patterngen.gui.pattern_storage.stats.count=Total: %s patterns
+ae2patterngen.gui.pattern_storage.stats.source=Source: %s
+ae2patterngen.gui.pattern_storage.stats.time=Generated At: %s
+ae2patterngen.gui.pattern_storage.search.label=Search:
+ae2patterngen.gui.pattern_storage.search.button=Find
+ae2patterngen.gui.pattern_storage.search.reset=All
+ae2patterngen.gui.pattern_storage.preview.title=Pattern Preview (%s/%s)
+ae2patterngen.gui.pattern_storage.preview.empty=No matching patterns found
+ae2patterngen.gui.pattern_storage.button.extract=Extract to Inventory
+ae2patterngen.gui.pattern_storage.button.clear=Clear All
+ae2patterngen.gui.pattern_storage.footer.export_hint=● Sneak-right-click a block to export directly into containers
+
+# Pattern Detail GUI
+ae2patterngen.gui.pattern_detail.title=▸ Pattern Detail #%s
+ae2patterngen.gui.pattern_detail.input.title=Input (%s)
+ae2patterngen.gui.pattern_detail.output.title=Output (%s)
+ae2patterngen.gui.pattern_detail.button.delete=Delete Pattern
+
+# Recipe Picker GUI
+ae2patterngen.gui.recipe_picker.unknown_product=Unknown Product
+ae2patterngen.gui.recipe_picker.title=Recipe Conflict: %s | Remaining: %s
+ae2patterngen.gui.recipe_picker.list_title=Candidates (%s)
+ae2patterngen.gui.recipe_picker.detail_title=Details
+ae2patterngen.gui.recipe_picker.button.select=Select
+ae2patterngen.gui.recipe_picker.button.cancel=Cancel
+ae2patterngen.gui.recipe_picker.status.previewed=Previewed #%s. Click "Select" on the right to confirm.
+ae2patterngen.gui.recipe_picker.status.no_candidate=No available candidate in this conflict group.
+ae2patterngen.gui.recipe_picker.status.final_submitted=Final conflict selection submitted. Finishing generation...
+ae2patterngen.gui.recipe_picker.status.batch_submitted=Batch submitted. Waiting for next batch...
+ae2patterngen.gui.recipe_picker.status.default=Candidate %s/%s. Click row to preview, click right button to submit, ESC closes only.
+ae2patterngen.gui.recipe_picker.status.default_empty=No selectable recipes in this conflict group. Click "Cancel" to abort.
+ae2patterngen.gui.recipe_picker.preview.input=Input: %s
+ae2patterngen.gui.recipe_picker.detail.not_selected=No candidate selected
+ae2patterngen.gui.recipe_picker.detail.meta=Metadata
+ae2patterngen.gui.recipe_picker.detail.machine=Machine: %s
+ae2patterngen.gui.recipe_picker.detail.recipe_map=Recipe Map: %s
+ae2patterngen.gui.recipe_picker.detail.duration=Duration: %s tick
+ae2patterngen.gui.recipe_picker.detail.input_items=Input Items
+ae2patterngen.gui.recipe_picker.detail.input_fluids=Input Fluids
+ae2patterngen.gui.recipe_picker.detail.output_items=Output Items
+ae2patterngen.gui.recipe_picker.detail.output_fluids=Output Fluids
+ae2patterngen.gui.recipe_picker.detail.special_items=Special Items
+
+# Command
+ae2patterngen.command.help.title==== AE2 Pattern Generator ===
+ae2patterngen.command.help.list=/patterngen list - List all recipe maps
+ae2patterngen.command.help.count=/patterngen count <recipeMapId> [outputOre] [inputOre] [ncItem] [blacklistIn] [blacklistOut] - Preview matches
+ae2patterngen.command.help.generate=/patterngen generate <recipeMapId> [outputOre] [inputOre] [ncItem] [blacklistIn] [blacklistOut] - Generate patterns
+ae2patterngen.command.list.available_maps=Available recipe maps (%s):
+ae2patterngen.command.list.entry=  %s (%s)
+ae2patterngen.command.generate.usage=Usage: /patterngen generate <recipeMapId> [outputOre] [inputOre] [ncItem]
+ae2patterngen.command.count.usage=Usage: /patterngen count <recipeMapId> [outputOre] [inputOre] [ncItem]
+ae2patterngen.command.only_player=This command can only be executed by a player.
+ae2patterngen.command.no_matching_recipe=No matching recipes found.
+ae2patterngen.command.generate.insufficient_blank_pattern=Generation failed: not enough blank patterns.
+ae2patterngen.command.generate.required_vs_owned=Required %s, but only %s available.
+ae2patterngen.command.generate.start=Consuming blank patterns and generating %s result(s)...
+ae2patterngen.command.generate.done=Done! Added to inventory: %s, dropped on ground: %s
+ae2patterngen.command.map_not_found=No matching recipe map found: %s
+ae2patterngen.command.matched_maps=Matched recipe maps: %s
+ae2patterngen.command.filter_result=Raw recipes: %s, after filter: %s
+ae2patterngen.command.count.result=Matched %s recipe(s)
+
+# Tooltip
+ae2patterngen.tooltip.feature.title=[Features]
+ae2patterngen.tooltip.feature.batch_encode=Batch Encoding
+ae2patterngen.tooltip.feature.batch_encode.desc=Batch export GregTech machine recipes as AE2 processing patterns
+ae2patterngen.tooltip.feature.smart_filter=Smart Filtering
+ae2patterngen.tooltip.feature.smart_filter.desc=Supports regex matching, material replacement, and tier filtering
+ae2patterngen.tooltip.feature.conflict_resolution=Conflict Resolution
+ae2patterngen.tooltip.feature.conflict_resolution.desc=Manually choose recipes when multiple matches output the same product
+ae2patterngen.tooltip.feature.virtual_storage=Virtual Storage
+ae2patterngen.tooltip.feature.virtual_storage.desc=Generated patterns are stored in internal storage instead of your inventory
+ae2patterngen.tooltip.feature.equivalent_consume=Equivalent Consume
+ae2patterngen.tooltip.feature.equivalent_consume.desc=Consumes blank patterns from bound ME network or inventory automatically
+ae2patterngen.tooltip.usage.title=[Usage]
+ae2patterngen.tooltip.usage.right_click_air=Right Click (Air)
+ae2patterngen.tooltip.usage.right_click_air.desc=Open generation configuration GUI
+ae2patterngen.tooltip.usage.shift_right_click_air=Shift + Right Click (Air)
+ae2patterngen.tooltip.usage.shift_right_click_air.desc=Open virtual pattern storage
+ae2patterngen.tooltip.usage.shift_right_click_block=Shift + Right Click (Block)
+ae2patterngen.tooltip.usage.shift_right_click_block.desc=Detect block properties; export patterns if target is a container
+ae2patterngen.tooltip.usage.network_binding=Network Binding
+ae2patterngen.tooltip.usage.network_binding.desc=Bind to ME network via security terminal
+ae2patterngen.tooltip.hint.quick_open=Right-click to open generator GUI
+ae2patterngen.tooltip.hint.quick_storage=Shift + right-click air to open storage GUI
+ae2patterngen.tooltip.hint.quick_detect_export=Shift + right-click block to detect properties / export patterns
+ae2patterngen.tooltip.hint.hold_shift_prefix=Hold
+ae2patterngen.tooltip.key.shift=Shift
+ae2patterngen.tooltip.hint.hold_shift=to view detailed features
+
+# Message - Storage
+ae2patterngen.msg.storage.empty_extract=[AE2PatternGen] Storage is empty. Nothing to extract.
+ae2patterngen.msg.storage.inventory_full=[AE2PatternGen] Inventory is full. Cannot extract patterns.
+ae2patterngen.msg.storage.extracted=[AE2PatternGen] Extracted %s pattern(s) to inventory.
+ae2patterngen.msg.storage.extracted_with_remaining=[AE2PatternGen] Extracted %s pattern(s) to inventory (%s remaining).
+ae2patterngen.msg.storage.already_empty=[AE2PatternGen] Storage is already empty.
+ae2patterngen.msg.storage.cleared=[AE2PatternGen] Cleared %s pattern(s).
+ae2patterngen.msg.storage.delete_invalid=[AE2PatternGen] Delete failed: invalid index.
+ae2patterngen.msg.storage.deleted=[AE2PatternGen] Deleted: %s (%s remaining).
+
+# Message - Generate
+ae2patterngen.msg.generate.storage_not_empty=[AE2PatternGen] Storage still has %s uncleared pattern(s) (source: %s). Please extract or clear first.
+ae2patterngen.msg.generate.no_matching_map=[AE2PatternGen] No matching recipe map: %s
+ae2patterngen.msg.generate.matched_maps=[AE2PatternGen] Matched recipe maps: %s
+ae2patterngen.msg.generate.filter_result=[AE2PatternGen] Raw recipes: %s, after filter: %s
+ae2patterngen.msg.generate.no_match_after_filter=[AE2PatternGen] No matching recipes found (check regex / ore dict).
+ae2patterngen.msg.generate.replacement_applied=[AE2PatternGen] Ore dictionary replacement rules applied.
+ae2patterngen.msg.generate.conflicts_detected=[AE2PatternGen] Detected %s conflict group(s). Please choose manually.
+
+# Message - Conflict
+ae2patterngen.msg.conflict.cancelled=[AE2PatternGen] Conflict selection cancelled.
+ae2patterngen.msg.conflict.session_changed=[AE2PatternGen] Conflict session changed. Please reselect from latest list.
+ae2patterngen.msg.conflict.session_empty=[AE2PatternGen] Conflict session error: current group is empty. Processing aborted.
+ae2patterngen.msg.conflict.invalid_selection=[AE2PatternGen] Invalid selection index: %s. Please select again.
+ae2patterngen.msg.conflict.session_updated=[AE2PatternGen] Conflict session updated. Please reselect from latest list.
+ae2patterngen.msg.conflict.no_valid_selection=[AE2PatternGen] No valid selection received.
+ae2patterngen.msg.conflict.session_empty_group=[AE2PatternGen] Conflict session error: current group is empty.
+ae2patterngen.msg.conflict.invalid_batch_selection=[AE2PatternGen] Invalid selection index: %s. Please select again.
+
+# Message - Item
+ae2patterngen.msg.item.block_not_detectable=[AE2PatternGen] This block cannot be scanned.
+ae2patterngen.msg.item.detected_recipe_map=[AE2PatternGen] Recipe map detected and saved: %s
+ae2patterngen.msg.item.machine_part_unsupported=[AE2PatternGen] This machine part does not support recipe detection or pattern export.
+ae2patterngen.msg.item.block_extract_unsupported=[AE2PatternGen] This block does not support data extraction or pattern export.
+ae2patterngen.msg.item.storage_empty_export=[AE2PatternGen] Storage is empty. Nothing to export.
+ae2patterngen.msg.item.storage_update_failed=[AE2PatternGen] Storage update failed. Please retry later.
+ae2patterngen.msg.item.exported=[AE2PatternGen] Exported %s pattern(s) to target container.
+ae2patterngen.msg.item.exported_with_remaining=[AE2PatternGen] Exported %s pattern(s) to target container (%s remaining).
+
+# Message - Pattern Generation
+ae2patterngen.msg.pattern.no_valid_after_encode=[AE2PatternGen] No valid pattern after encoding.
+ae2patterngen.msg.pattern.storage_write_failed=[AE2PatternGen] Failed to write storage. Please retry later.
+ae2patterngen.msg.pattern.generated_and_consumed=[AE2PatternGen] Consumed %s blank pattern(s) and generated equal outputs.
+ae2patterngen.msg.pattern.stored_hint=Patterns are stored. Sneak-right-click air to view, or sneak-right-click a container to export.
+ae2patterngen.msg.pattern.insufficient_blank_pattern=[AE2PatternGen] Generation failed: need %s blank pattern(s) but only %s available.
+
+# Message - Common
+ae2patterngen.msg.common.unknown_item=Unknown Item

@@ -12,6 +12,7 @@ import com.github.ae2patterngen.network.PacketGeneratePatterns;
 import com.github.ae2patterngen.network.PacketSaveFields;
 import com.github.ae2patterngen.recipe.GTRecipeSource;
 import com.github.ae2patterngen.recipe.RecipeEntry;
+import com.github.ae2patterngen.util.I18nUtil;
 import com.gtnewhorizons.modularui.api.drawable.shapes.Rectangle;
 import com.gtnewhorizons.modularui.api.screen.ModularWindow;
 import com.gtnewhorizons.modularui.api.screen.UIBuildContext;
@@ -30,7 +31,8 @@ public class GuiPatternGen {
 
         builder.setBackground(com.gtnewhorizons.modularui.api.ModularUITextures.VANILLA_BACKGROUND);
 
-        TextWidget titleText = new TextWidget(EnumChatFormatting.BOLD + "AE2 Pattern Generator");
+        TextWidget titleText = new TextWidget(
+            EnumChatFormatting.BOLD + I18nUtil.tr("ae2patterngen.gui.pattern_gen.title"));
         titleText.setScale(1.2f);
         titleText.setSize(GUI_W - 16, 20);
         titleText.setPos(8, 8);
@@ -45,7 +47,8 @@ public class GuiPatternGen {
         int fullFieldW = GUI_W - 16 - 12;
         int inputX = 80;
 
-        TextWidget labelRecipe = new TextWidget(EnumChatFormatting.BOLD + "配方设置");
+        TextWidget labelRecipe = new TextWidget(
+            EnumChatFormatting.BOLD + I18nUtil.tr("ae2patterngen.gui.pattern_gen.section.recipe"));
         labelRecipe.setPos(6, refY + 3);
         scrollable.widget(labelRecipe);
 
@@ -59,11 +62,12 @@ public class GuiPatternGen {
         scrollable.widget(tfRecipeMap);
         refY += 38;
 
-        TextWidget labelFilter = new TextWidget(EnumChatFormatting.BOLD + "过滤器");
+        TextWidget labelFilter = new TextWidget(
+            EnumChatFormatting.BOLD + I18nUtil.tr("ae2patterngen.gui.pattern_gen.section.filter"));
         labelFilter.setPos(6, refY + 3);
         scrollable.widget(labelFilter);
 
-        TextWidget labelOutOre = new TextWidget("输出矿辞:");
+        TextWidget labelOutOre = new TextWidget(I18nUtil.tr("ae2patterngen.gui.pattern_gen.label.output_ore"));
         labelOutOre.setPos(6, refY + 14 + 3);
         scrollable.widget(labelOutOre);
 
@@ -76,7 +80,7 @@ public class GuiPatternGen {
         tfOutputOre.setTextAlignment(com.gtnewhorizons.modularui.api.math.Alignment.CenterLeft);
         scrollable.widget(tfOutputOre);
 
-        TextWidget labelInOre = new TextWidget("输入矿辞:");
+        TextWidget labelInOre = new TextWidget(I18nUtil.tr("ae2patterngen.gui.pattern_gen.label.input_ore"));
         labelInOre.setPos(6, refY + 32 + 3);
         scrollable.widget(labelInOre);
 
@@ -89,7 +93,7 @@ public class GuiPatternGen {
         tfInputOre.setTextAlignment(com.gtnewhorizons.modularui.api.math.Alignment.CenterLeft);
         scrollable.widget(tfInputOre);
 
-        TextWidget labelNC = new TextWidget("NC 物品:");
+        TextWidget labelNC = new TextWidget(I18nUtil.tr("ae2patterngen.gui.pattern_gen.label.nc_item"));
         labelNC.setPos(6, refY + 50 + 3);
         scrollable.widget(labelNC);
 
@@ -102,12 +106,12 @@ public class GuiPatternGen {
         tfNCItem.setTextAlignment(com.gtnewhorizons.modularui.api.math.Alignment.CenterLeft);
         scrollable.widget(tfNCItem);
 
-        TextWidget labelTier = new TextWidget("电压等级:");
+        TextWidget labelTier = new TextWidget(I18nUtil.tr("ae2patterngen.gui.pattern_gen.label.tier"));
         labelTier.setPos(6, refY + 68 + 3);
         scrollable.widget(labelTier);
 
         final List<String> tiers = Arrays.asList(
-            "Any",
+            I18nUtil.tr("ae2patterngen.gui.common.any"),
             "ULV",
             "LV",
             "MV",
@@ -147,11 +151,12 @@ public class GuiPatternGen {
 
         refY += 84;
 
-        TextWidget labelBL = new TextWidget(EnumChatFormatting.BOLD + "黑名单");
+        TextWidget labelBL = new TextWidget(
+            EnumChatFormatting.BOLD + I18nUtil.tr("ae2patterngen.gui.pattern_gen.section.blacklist"));
         labelBL.setPos(6, refY + 3);
         scrollable.widget(labelBL);
 
-        TextWidget labelBLIn = new TextWidget("输入排除:");
+        TextWidget labelBLIn = new TextWidget(I18nUtil.tr("ae2patterngen.gui.pattern_gen.label.blacklist_input"));
         labelBLIn.setPos(6, refY + 14 + 3);
         scrollable.widget(labelBLIn);
 
@@ -164,7 +169,7 @@ public class GuiPatternGen {
         tfBlacklistIn.setTextAlignment(com.gtnewhorizons.modularui.api.math.Alignment.CenterLeft);
         scrollable.widget(tfBlacklistIn);
 
-        TextWidget labelBLOut = new TextWidget("输出排除:");
+        TextWidget labelBLOut = new TextWidget(I18nUtil.tr("ae2patterngen.gui.pattern_gen.label.blacklist_output"));
         labelBLOut.setPos(6, refY + 32 + 3);
         scrollable.widget(labelBLOut);
 
@@ -177,7 +182,8 @@ public class GuiPatternGen {
         tfBlacklistOut.setTextAlignment(com.gtnewhorizons.modularui.api.math.Alignment.CenterLeft);
         scrollable.widget(tfBlacklistOut);
 
-        TextWidget regexHint = new TextWidget(EnumChatFormatting.DARK_GRAY + "支持正则：输出矿辞 / 输入矿辞 / NC 物品 / 黑名单");
+        TextWidget regexHint = new TextWidget(
+            EnumChatFormatting.DARK_GRAY + I18nUtil.tr("ae2patterngen.gui.pattern_gen.hint.regex"));
         regexHint.setPos(6, refY + 50 + 3);
         scrollable.widget(regexHint);
 
@@ -185,11 +191,13 @@ public class GuiPatternGen {
 
         int loadedRuleCount = com.github.ae2patterngen.config.ReplacementConfig.load();
 
-        TextWidget labelRep = new TextWidget(EnumChatFormatting.BOLD + "替换规则");
+        TextWidget labelRep = new TextWidget(
+            EnumChatFormatting.BOLD + I18nUtil.tr("ae2patterngen.gui.pattern_gen.section.replacements"));
         labelRep.setPos(6, refY + 3);
         scrollable.widget(labelRep);
 
-        TextWidget labelRepCount = new TextWidget("共加载 " + loadedRuleCount + " 条");
+        TextWidget labelRepCount = new TextWidget(
+            I18nUtil.tr("ae2patterngen.gui.pattern_gen.replacements.count", loadedRuleCount));
         labelRepCount.setPos(6, refY + 20);
         scrollable.widget(labelRepCount);
 
@@ -200,7 +208,7 @@ public class GuiPatternGen {
         btnConfig.setSize(80, 20);
         btnConfig.setBackground(com.gtnewhorizons.modularui.api.ModularUITextures.VANILLA_BUTTON_NORMAL);
 
-        TextWidget btnConfigText = new TextWidget("打开配置");
+        TextWidget btnConfigText = new TextWidget(I18nUtil.tr("ae2patterngen.gui.pattern_gen.button.open_config"));
         btnConfigText.setPos(btnCfgX + 16, btnCfgY + 6);
 
         btnConfig.setOnClick((cd, w) -> {
@@ -214,7 +222,7 @@ public class GuiPatternGen {
 
         builder.widget(scrollable);
 
-        String[] statusMsg = new String[] { "● 就绪" };
+        String[] statusMsg = new String[] { I18nUtil.tr("ae2patterngen.gui.pattern_gen.status.ready") };
         TextWidget statusWidget = new TextWidget("");
         statusWidget.setStringSupplier(() -> statusMsg[0]);
         statusWidget.setPos(8, GUI_H - 12);
@@ -243,13 +251,13 @@ public class GuiPatternGen {
         btnList.setSize(btnW, btnH);
         btnList.setBackground(com.gtnewhorizons.modularui.api.ModularUITextures.VANILLA_BUTTON_NORMAL);
 
-        TextWidget btnListText = new TextWidget("列出地图");
+        TextWidget btnListText = new TextWidget(I18nUtil.tr("ae2patterngen.gui.pattern_gen.button.list_maps"));
         btnListText.setPos(btnStartX + 14, btnY + 6);
 
         btnList.setOnClick((cd, w) -> {
             saveFunction.run();
             List<String> matched = GTRecipeSource.findMatchingRecipeMaps(tfRecipeMap.getText());
-            statusMsg[0] = "● 匹配地图: " + matched.size();
+            statusMsg[0] = I18nUtil.tr("ae2patterngen.gui.pattern_gen.status.map_matches", matched.size());
         });
         builder.widget(btnList);
         builder.widget(btnListText);
@@ -260,13 +268,13 @@ public class GuiPatternGen {
         btnPreview.setSize(btnW, btnH);
         btnPreview.setBackground(com.gtnewhorizons.modularui.api.ModularUITextures.VANILLA_BUTTON_NORMAL);
 
-        TextWidget btnPreviewText = new TextWidget("预览数量");
+        TextWidget btnPreviewText = new TextWidget(I18nUtil.tr("ae2patterngen.gui.pattern_gen.button.preview_count"));
         btnPreviewText.setPos(btnPBX + 14, btnY + 6);
 
         btnPreview.setOnClick((cd, w) -> {
             saveFunction.run();
             List<RecipeEntry> recipes = GTRecipeSource.collectRecipes(tfRecipeMap.getText());
-            statusMsg[0] = "● 过滤前配方: " + recipes.size();
+            statusMsg[0] = I18nUtil.tr("ae2patterngen.gui.pattern_gen.status.recipes_before_filter", recipes.size());
         });
         builder.widget(btnPreview);
         builder.widget(btnPreviewText);
@@ -277,13 +285,13 @@ public class GuiPatternGen {
         btnGenerate.setSize(btnW, btnH);
         btnGenerate.setBackground(com.gtnewhorizons.modularui.api.ModularUITextures.VANILLA_BUTTON_NORMAL);
 
-        TextWidget btnGenerateText = new TextWidget("▶ 生成样板");
+        TextWidget btnGenerateText = new TextWidget(I18nUtil.tr("ae2patterngen.gui.pattern_gen.button.generate"));
         btnGenerateText.setPos(btnGBX + 10, btnY + 6);
 
         btnGenerate.setOnClick((cd, w) -> {
             if (tfRecipeMap.getText()
                 .isEmpty()) {
-                statusMsg[0] = EnumChatFormatting.RED + "错误: 配方表不可为空";
+                statusMsg[0] = EnumChatFormatting.RED + I18nUtil.tr("ae2patterngen.gui.pattern_gen.error.empty_map");
                 return;
             }
             saveFunction.run();
@@ -297,7 +305,7 @@ public class GuiPatternGen {
                     tfBlacklistOut.getText(),
                     "",
                     currentTierIndex[0] - 1));
-            statusMsg[0] = "● 已请求生成样板";
+            statusMsg[0] = I18nUtil.tr("ae2patterngen.gui.pattern_gen.status.generate_requested");
         });
         builder.widget(btnGenerate);
         builder.widget(btnGenerateText);

@@ -16,6 +16,7 @@ import com.github.ae2patterngen.AE2PatternGen;
 import com.github.ae2patterngen.network.NetworkHandler;
 import com.github.ae2patterngen.network.PacketStorageAction;
 import com.github.ae2patterngen.storage.PatternStorage;
+import com.github.ae2patterngen.util.I18nUtil;
 import com.gtnewhorizons.modularui.api.drawable.shapes.Rectangle;
 import com.gtnewhorizons.modularui.api.math.Alignment;
 import com.gtnewhorizons.modularui.api.screen.ModularWindow;
@@ -38,38 +39,42 @@ public class GuiPatternStorage {
         ModularWindow.Builder builder = ModularWindow.builder(GUI_W, GUI_H);
         builder.setBackground(com.gtnewhorizons.modularui.api.ModularUITextures.VANILLA_BACKGROUND);
 
-        TextWidget titleText = new TextWidget(EnumChatFormatting.BOLD + "▸ 样板仓储");
+        TextWidget titleText = new TextWidget(
+            EnumChatFormatting.BOLD + I18nUtil.tr("ae2patterngen.gui.pattern_storage.title"));
         titleText.setScale(1.2f);
         titleText.setSize(GUI_W - 16, 20);
         titleText.setPos(8, 8);
         builder.widget(titleText);
 
         if (summary.count == 0) {
-            String msg = "仓储为空，请先在配置 GUI 中生成样板";
+            String msg = I18nUtil.tr("ae2patterngen.gui.pattern_storage.empty");
             TextWidget emptyText = new TextWidget(msg);
             int strW = approximateTextWidth(msg);
             emptyText.setPos(GUI_W / 2 - strW / 2, 40);
             builder.widget(emptyText);
         } else {
             int y = 24;
-            TextWidget statsTitle = new TextWidget(EnumChatFormatting.BOLD + "统计");
+            TextWidget statsTitle = new TextWidget(
+                EnumChatFormatting.BOLD + I18nUtil.tr("ae2patterngen.gui.pattern_storage.stats.title"));
             statsTitle.setPos(8, y);
             builder.widget(statsTitle);
             y += 14;
 
-            TextWidget countText = new TextWidget("总数: " + summary.count + " 个样板");
+            TextWidget countText = new TextWidget(
+                I18nUtil.tr("ae2patterngen.gui.pattern_storage.stats.count", summary.count));
             countText.setPos(14, y);
             builder.widget(countText);
             y += 12;
 
-            TextWidget sourceText = new TextWidget("来源: " + summary.source);
+            TextWidget sourceText = new TextWidget(
+                I18nUtil.tr("ae2patterngen.gui.pattern_storage.stats.source", summary.source));
             sourceText.setPos(14, y);
             builder.widget(sourceText);
             y += 12;
 
-            String timeStr = summary.timestamp <= 0 ? "N/A"
+            String timeStr = summary.timestamp <= 0 ? I18nUtil.tr("ae2patterngen.gui.common.na")
                 : new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date(summary.timestamp));
-            TextWidget timeText = new TextWidget("生成时间: " + timeStr);
+            TextWidget timeText = new TextWidget(I18nUtil.tr("ae2patterngen.gui.pattern_storage.stats.time", timeStr));
             timeText.setPos(14, y);
             builder.widget(timeText);
             y += 16;
@@ -80,7 +85,7 @@ public class GuiPatternStorage {
             int searchGap = 2;
             int searchFieldW = GUI_W - 16 - searchInputX - searchBtnW - resetBtnW - searchGap * 2;
 
-            TextWidget searchLabel = new TextWidget("搜索:");
+            TextWidget searchLabel = new TextWidget(I18nUtil.tr("ae2patterngen.gui.pattern_storage.search.label"));
             searchLabel.setPos(14, y + 3);
             builder.widget(searchLabel);
 
@@ -98,9 +103,10 @@ public class GuiPatternStorage {
             btnSearch.setPos(btnSearchX, y);
             btnSearch.setSize(searchBtnW, 14);
             btnSearch.setBackground(new Rectangle().setColor(0xFF1E1E30));
-            TextWidget btnSearchText = new TextWidget("搜索");
+            TextWidget btnSearchText = new TextWidget(I18nUtil.tr("ae2patterngen.gui.pattern_storage.search.button"));
             btnSearchText.setPos(btnSearchX + 5, y + 3);
-            btnSearchText.setStringSupplier(() -> EnumChatFormatting.WHITE + "搜索");
+            btnSearchText.setStringSupplier(
+                () -> EnumChatFormatting.WHITE + I18nUtil.tr("ae2patterngen.gui.pattern_storage.search.button"));
             btnSearch.setOnClick((cd, w) -> {
                 setSearchQuery(player.getUniqueID(), tfSearch.getText());
                 AE2PatternGen.proxy.openPatternStorageScreen(player);
@@ -113,9 +119,10 @@ public class GuiPatternStorage {
             btnReset.setPos(btnResetX, y);
             btnReset.setSize(resetBtnW, 14);
             btnReset.setBackground(new Rectangle().setColor(0xFF1E1E30));
-            TextWidget btnResetText = new TextWidget("全部");
+            TextWidget btnResetText = new TextWidget(I18nUtil.tr("ae2patterngen.gui.pattern_storage.search.reset"));
             btnResetText.setPos(btnResetX + 5, y + 3);
-            btnResetText.setStringSupplier(() -> EnumChatFormatting.WHITE + "全部");
+            btnResetText.setStringSupplier(
+                () -> EnumChatFormatting.WHITE + I18nUtil.tr("ae2patterngen.gui.pattern_storage.search.reset"));
             btnReset.setOnClick((cd, w) -> {
                 setSearchQuery(player.getUniqueID(), "");
                 AE2PatternGen.proxy.openPatternStorageScreen(player);
@@ -127,7 +134,8 @@ public class GuiPatternStorage {
 
             List<Integer> filteredIndices = filterIndices(summary.previews, searchQuery);
             TextWidget previewTitle = new TextWidget(
-                EnumChatFormatting.BOLD + "样板预览 (" + filteredIndices.size() + "/" + summary.count + ")");
+                EnumChatFormatting.BOLD + I18nUtil
+                    .tr("ae2patterngen.gui.pattern_storage.preview.title", filteredIndices.size(), summary.count));
             previewTitle.setPos(8, y);
             builder.widget(previewTitle);
             y += 14;
@@ -138,7 +146,8 @@ public class GuiPatternStorage {
 
             int listY = 0;
             if (filteredIndices.isEmpty()) {
-                TextWidget emptyResult = new TextWidget(EnumChatFormatting.GRAY + "未找到匹配样板");
+                TextWidget emptyResult = new TextWidget(
+                    EnumChatFormatting.GRAY + I18nUtil.tr("ae2patterngen.gui.pattern_storage.preview.empty"));
                 emptyResult.setPos(4, listY + 3);
                 scrollable.widget(emptyResult);
                 listY += 16;
@@ -182,7 +191,7 @@ public class GuiPatternStorage {
         btnExtract.setPos(GUI_W / 2 - btnW - 4, btnY);
         btnExtract.setSize(btnW, btnH);
         btnExtract.setBackground(com.gtnewhorizons.modularui.api.ModularUITextures.VANILLA_BUTTON_NORMAL);
-        TextWidget btnExtText = new TextWidget("取出到背包");
+        TextWidget btnExtText = new TextWidget(I18nUtil.tr("ae2patterngen.gui.pattern_storage.button.extract"));
         btnExtText.setPos(GUI_W / 2 - btnW - 4 + 16, btnY + 6);
         btnExtract.setOnClick((cd, w) -> {
             NetworkHandler.INSTANCE.sendToServer(new PacketStorageAction(PacketStorageAction.ACTION_EXTRACT));
@@ -195,7 +204,7 @@ public class GuiPatternStorage {
         btnClear.setPos(GUI_W / 2 + 4, btnY);
         btnClear.setSize(btnW, btnH);
         btnClear.setBackground(com.gtnewhorizons.modularui.api.ModularUITextures.VANILLA_BUTTON_NORMAL);
-        TextWidget btnClrText = new TextWidget("一键清空");
+        TextWidget btnClrText = new TextWidget(I18nUtil.tr("ae2patterngen.gui.pattern_storage.button.clear"));
         btnClrText.setPos(GUI_W / 2 + 4 + 20, btnY + 6);
         btnClear.setOnClick((cd, w) -> {
             NetworkHandler.INSTANCE.sendToServer(new PacketStorageAction(PacketStorageAction.ACTION_CLEAR));
@@ -204,7 +213,8 @@ public class GuiPatternStorage {
         builder.widget(btnClear);
         builder.widget(btnClrText);
 
-        TextWidget footerText = new TextWidget(EnumChatFormatting.GRAY + "● 蹲下右键方块可直接导出到容器");
+        TextWidget footerText = new TextWidget(
+            EnumChatFormatting.GRAY + I18nUtil.tr("ae2patterngen.gui.pattern_storage.footer.export_hint"));
         footerText.setPos(8, GUI_H - 12);
         builder.widget(footerText);
 

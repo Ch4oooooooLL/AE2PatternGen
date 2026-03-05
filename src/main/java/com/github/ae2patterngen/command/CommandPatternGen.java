@@ -19,6 +19,7 @@ import com.github.ae2patterngen.filter.NCItemFilter;
 import com.github.ae2patterngen.filter.OutputOreDictFilter;
 import com.github.ae2patterngen.recipe.GTRecipeSource;
 import com.github.ae2patterngen.recipe.RecipeEntry;
+import com.github.ae2patterngen.util.I18nUtil;
 
 /**
  * /patterngen 命令
@@ -75,48 +76,34 @@ public class CommandPatternGen extends CommandBase {
     }
 
     private void sendHelp(ICommandSender sender) {
-        sender.addChatMessage(new ChatComponentText(EnumChatFormatting.GOLD + "=== AE2 Pattern Generator ==="));
-        sender.addChatMessage(
-            new ChatComponentText(
-                EnumChatFormatting.YELLOW + "/patterngen list" + EnumChatFormatting.WHITE + " - 列出所有配方表"));
-        sender.addChatMessage(
-            new ChatComponentText(
-                EnumChatFormatting.YELLOW + "/patterngen count <配方表ID> [输出矿辞] [输入矿辞] [NC物品] [输入黑名单] [输出黑名单]"
-                    + EnumChatFormatting.WHITE
-                    + " - 预览匹配数量"));
-        sender.addChatMessage(
-            new ChatComponentText(
-                EnumChatFormatting.YELLOW + "/patterngen generate <配方表ID> [输出矿辞] [输入矿辞] [NC物品] [输入黑名单] [输出黑名单]"
-                    + EnumChatFormatting.WHITE
-                    + " - 生成样板"));
+        send(sender, EnumChatFormatting.GOLD, "ae2patterngen.command.help.title");
+        send(sender, EnumChatFormatting.YELLOW, "ae2patterngen.command.help.list");
+        send(sender, EnumChatFormatting.YELLOW, "ae2patterngen.command.help.count");
+        send(sender, EnumChatFormatting.YELLOW, "ae2patterngen.command.help.generate");
     }
 
     private void handleList(ICommandSender sender) {
         Map<String, String> maps = GTRecipeSource.getAvailableRecipeMaps();
-        sender.addChatMessage(new ChatComponentText(EnumChatFormatting.GOLD + "可用的配方表 (" + maps.size() + " 个):"));
+        send(sender, EnumChatFormatting.GOLD, "ae2patterngen.command.list.available_maps", maps.size());
 
         for (Map.Entry<String, String> entry : maps.entrySet()) {
-            sender.addChatMessage(
-                new ChatComponentText(
-                    EnumChatFormatting.GREEN + "  "
-                        + entry.getKey()
-                        + EnumChatFormatting.GRAY
-                        + " ("
-                        + entry.getValue()
-                        + ")"));
+            send(
+                sender,
+                EnumChatFormatting.GREEN,
+                "ae2patterngen.command.list.entry",
+                entry.getKey(),
+                entry.getValue());
         }
     }
 
     private void handleGenerate(ICommandSender sender, String[] args) {
         if (args.length < 2) {
-            sender.addChatMessage(
-                new ChatComponentText(
-                    EnumChatFormatting.RED + "用法: /patterngen generate <配方表ID> [输出矿辞] [输入矿辞] [NC物品]"));
+            send(sender, EnumChatFormatting.RED, "ae2patterngen.command.generate.usage");
             return;
         }
 
         if (!(sender instanceof EntityPlayerMP)) {
-            sender.addChatMessage(new ChatComponentText(EnumChatFormatting.RED + "此命令只能由玩家执行"));
+            send(sender, EnumChatFormatting.RED, "ae2patterngen.command.only_player");
             return;
         }
 
@@ -124,7 +111,7 @@ public class CommandPatternGen extends CommandBase {
         List<RecipeEntry> filtered = collectAndFilter(sender, args);
 
         if (filtered.isEmpty()) {
-            sender.addChatMessage(new ChatComponentText(EnumChatFormatting.YELLOW + "没有找到匹配的配方"));
+            send(sender, EnumChatFormatting.YELLOW, "ae2patterngen.command.no_matching_recipe");
             return;
         }
 
@@ -136,15 +123,17 @@ public class CommandPatternGen extends CommandBase {
 
         if (!com.github.ae2patterngen.util.InventoryUtil.consumeItem(player, blankPattern, requiredCount)) {
             int currentHas = com.github.ae2patterngen.util.InventoryUtil.countItem(player, blankPattern);
-            sender.addChatMessage(new ChatComponentText(EnumChatFormatting.RED + "生成失败: 空白样板不足。"));
-            sender.addChatMessage(
-                new ChatComponentText(
-                    EnumChatFormatting.RED + "需要 " + requiredCount + " 个，但你只有 " + currentHas + " 个。"));
+            send(sender, EnumChatFormatting.RED, "ae2patterngen.command.generate.insufficient_blank_pattern");
+            send(
+                sender,
+                EnumChatFormatting.RED,
+                "ae2patterngen.command.generate.required_vs_owned",
+                requiredCount,
+                currentHas);
             return;
         }
 
-        sender.addChatMessage(
-            new ChatComponentText(EnumChatFormatting.GREEN + "扣除空样板并存入成品 " + patterns.size() + " 个..."));
+        send(sender, EnumChatFormatting.GREEN, "ae2patterngen.command.generate.start", patterns.size());
 
         int givenToInventory = 0;
         int droppedOnGround = 0;
@@ -164,21 +153,23 @@ public class CommandPatternGen extends CommandBase {
 
         player.inventoryContainer.detectAndSendChanges();
 
-        sender.addChatMessage(
-            new ChatComponentText(
-                EnumChatFormatting.GREEN + "完成! 放入背包: " + givenToInventory + ", 掉落地面: " + droppedOnGround));
+        send(
+            sender,
+            EnumChatFormatting.GREEN,
+            "ae2patterngen.command.generate.done",
+            givenToInventory,
+            droppedOnGround);
     }
 
     private void handleCount(ICommandSender sender, String[] args) {
         if (args.length < 2) {
-            sender.addChatMessage(
-                new ChatComponentText(EnumChatFormatting.RED + "用法: /patterngen count <配方表ID> [输出矿辞] [输入矿辞] [NC物品]"));
+            send(sender, EnumChatFormatting.RED, "ae2patterngen.command.count.usage");
             return;
         }
 
         List<RecipeEntry> filtered = collectAndFilter(sender, args);
 
-        sender.addChatMessage(new ChatComponentText(EnumChatFormatting.GREEN + "匹配到 " + filtered.size() + " 个配方"));
+        send(sender, EnumChatFormatting.GREEN, "ae2patterngen.command.count.result", filtered.size());
     }
 
     private List<RecipeEntry> collectAndFilter(ICommandSender sender, String[] args) {
@@ -190,11 +181,10 @@ public class CommandPatternGen extends CommandBase {
         // 1. 查找配方表
         List<String> matchedMaps = GTRecipeSource.findMatchingRecipeMaps(recipeMapIdInput);
         if (matchedMaps.isEmpty()) {
-            sender.addChatMessage(new ChatComponentText(EnumChatFormatting.RED + "未找到匹配的配方表: " + recipeMapIdInput));
+            send(sender, EnumChatFormatting.RED, "ae2patterngen.command.map_not_found", recipeMapIdInput);
             return new java.util.ArrayList<>();
         }
-        sender.addChatMessage(
-            new ChatComponentText(EnumChatFormatting.GRAY + "匹配到配方表: " + String.join(", ", matchedMaps)));
+        send(sender, EnumChatFormatting.GRAY, "ae2patterngen.command.matched_maps", String.join(", ", matchedMaps));
 
         // 2. 收集配方
         List<RecipeEntry> recipes = GTRecipeSource.collectRecipes(recipeMapIdInput);
@@ -231,9 +221,12 @@ public class CommandPatternGen extends CommandBase {
             }
         }
 
-        sender.addChatMessage(
-            new ChatComponentText(EnumChatFormatting.GRAY + "原始配方: " + totalBefore + ", 过滤后: " + filtered.size()));
+        send(sender, EnumChatFormatting.GRAY, "ae2patterngen.command.filter_result", totalBefore, filtered.size());
 
         return filtered;
+    }
+
+    private void send(ICommandSender sender, EnumChatFormatting color, String key, Object... args) {
+        sender.addChatMessage(new ChatComponentText(color + I18nUtil.tr(key, args)));
     }
 }

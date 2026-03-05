@@ -7,6 +7,7 @@ import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.EnumChatFormatting;
 
 import com.github.ae2patterngen.recipe.RecipeEntry;
+import com.github.ae2patterngen.util.I18nUtil;
 
 import cpw.mods.fml.common.network.simpleimpl.IMessage;
 import cpw.mods.fml.common.network.simpleimpl.IMessageHandler;
@@ -69,19 +70,18 @@ public class PacketResolveConflictsBatch implements IMessage {
                     return null;
                 }
                 ConflictSession.stop(uuid);
-                player.addChatMessage(new ChatComponentText(EnumChatFormatting.YELLOW + "[AE2PatternGen] 已取消本次冲突筛选。"));
+                send(player, EnumChatFormatting.YELLOW, "ae2patterngen.msg.conflict.cancelled");
                 return null;
             }
 
             if (message.expectedStartIndex > 0 && message.expectedStartIndex != serverStartIndex) {
-                player.addChatMessage(
-                    new ChatComponentText(EnumChatFormatting.RED + "[AE2PatternGen] 冲突会话已更新，请按最新列表重新选择。"));
+                send(player, EnumChatFormatting.RED, "ae2patterngen.msg.conflict.session_updated");
                 sendCurrentBatch(player, session);
                 return null;
             }
 
             if (message.selectedIndices == null || message.selectedIndices.length == 0) {
-                player.addChatMessage(new ChatComponentText(EnumChatFormatting.RED + "[AE2PatternGen] 未收到有效的选择结果。"));
+                send(player, EnumChatFormatting.RED, "ae2patterngen.msg.conflict.no_valid_selection");
                 sendCurrentBatch(player, session);
                 return null;
             }
@@ -91,16 +91,17 @@ public class PacketResolveConflictsBatch implements IMessage {
 
                 java.util.List<RecipeEntry> currentRecipes = session.getCurrentRecipes();
                 if (currentRecipes == null || currentRecipes.isEmpty()) {
-                    player.addChatMessage(
-                        new ChatComponentText(EnumChatFormatting.RED + "[AE2PatternGen] 冲突会话异常: 当前组为空。"));
+                    send(player, EnumChatFormatting.RED, "ae2patterngen.msg.conflict.session_empty_group");
                     ConflictSession.stop(uuid);
                     return null;
                 }
 
                 if (selectedIndex < 0 || selectedIndex >= currentRecipes.size()) {
-                    player.addChatMessage(
-                        new ChatComponentText(
-                            EnumChatFormatting.RED + "[AE2PatternGen] 选择索引无效: " + selectedIndex + "，请重新选择。"));
+                    send(
+                        player,
+                        EnumChatFormatting.RED,
+                        "ae2patterngen.msg.conflict.invalid_batch_selection",
+                        selectedIndex);
                     sendCurrentBatch(player, session);
                     return null;
                 }
@@ -120,6 +121,10 @@ public class PacketResolveConflictsBatch implements IMessage {
 
         private void sendCurrentBatch(EntityPlayerMP player, ConflictSession session) {
             ConflictResolutionService.sendCurrentBatch(player, session);
+        }
+
+        private void send(EntityPlayerMP player, EnumChatFormatting color, String key, Object... args) {
+            player.addChatMessage(new ChatComponentText(color + I18nUtil.tr(key, args)));
         }
     }
 }

@@ -1,1 +1,176 @@
 item.ae2patterngen.pattern_generator.name=样板生成器
+
+# 通用
+ae2patterngen.gui.common.any=任意
+ae2patterngen.gui.common.back=返回
+ae2patterngen.gui.common.na=N/A
+ae2patterngen.gui.common.none=(无)
+ae2patterngen.gui.common.unknown=(未知)
+
+# 生成 GUI
+ae2patterngen.gui.pattern_gen.title=AE2 样板生成器
+ae2patterngen.gui.pattern_gen.section.recipe=配方设置
+ae2patterngen.gui.pattern_gen.section.filter=过滤器
+ae2patterngen.gui.pattern_gen.label.output_ore=输出矿辞:
+ae2patterngen.gui.pattern_gen.label.input_ore=输入矿辞:
+ae2patterngen.gui.pattern_gen.label.nc_item=NC 物品:
+ae2patterngen.gui.pattern_gen.label.tier=电压等级:
+ae2patterngen.gui.pattern_gen.section.blacklist=黑名单
+ae2patterngen.gui.pattern_gen.label.blacklist_input=输入排除:
+ae2patterngen.gui.pattern_gen.label.blacklist_output=输出排除:
+ae2patterngen.gui.pattern_gen.hint.regex=支持正则: 输出矿辞 / 输入矿辞 / NC 物品 / 黑名单
+ae2patterngen.gui.pattern_gen.section.replacements=替换规则
+ae2patterngen.gui.pattern_gen.replacements.count=共加载 %s 条
+ae2patterngen.gui.pattern_gen.button.open_config=打开配置
+ae2patterngen.gui.pattern_gen.status.ready=● 就绪
+ae2patterngen.gui.pattern_gen.button.list_maps=列出地图
+ae2patterngen.gui.pattern_gen.status.map_matches=● 匹配地图: %s
+ae2patterngen.gui.pattern_gen.button.preview_count=预览数量
+ae2patterngen.gui.pattern_gen.status.recipes_before_filter=● 过滤前配方: %s
+ae2patterngen.gui.pattern_gen.button.generate=▶ 生成样板
+ae2patterngen.gui.pattern_gen.error.empty_map=错误: 配方表不可为空
+ae2patterngen.gui.pattern_gen.status.generate_requested=● 已发送生成请求
+
+# 仓储 GUI
+ae2patterngen.gui.pattern_storage.title=▸ 样板仓储
+ae2patterngen.gui.pattern_storage.empty=仓储为空，请先在配置 GUI 中生成样板。
+ae2patterngen.gui.pattern_storage.stats.title=统计
+ae2patterngen.gui.pattern_storage.stats.count=总数: %s 个样板
+ae2patterngen.gui.pattern_storage.stats.source=来源: %s
+ae2patterngen.gui.pattern_storage.stats.time=生成时间: %s
+ae2patterngen.gui.pattern_storage.search.label=搜索:
+ae2patterngen.gui.pattern_storage.search.button=搜索
+ae2patterngen.gui.pattern_storage.search.reset=全部
+ae2patterngen.gui.pattern_storage.preview.title=样板预览 (%s/%s)
+ae2patterngen.gui.pattern_storage.preview.empty=未找到匹配样板
+ae2patterngen.gui.pattern_storage.button.extract=取出到背包
+ae2patterngen.gui.pattern_storage.button.clear=一键清空
+ae2patterngen.gui.pattern_storage.footer.export_hint=● 蹲下右键方块可直接导出到容器
+
+# 详情 GUI
+ae2patterngen.gui.pattern_detail.title=▸ 样板详情 #%s
+ae2patterngen.gui.pattern_detail.input.title=输入 (%s)
+ae2patterngen.gui.pattern_detail.output.title=输出 (%s)
+ae2patterngen.gui.pattern_detail.button.delete=删除此样板
+
+# 冲突选择 GUI
+ae2patterngen.gui.recipe_picker.unknown_product=未知产物
+ae2patterngen.gui.recipe_picker.title=配方冲突: %s | 剩余待选: %s
+ae2patterngen.gui.recipe_picker.list_title=候选样板 (%s)
+ae2patterngen.gui.recipe_picker.detail_title=右侧详情
+ae2patterngen.gui.recipe_picker.button.select=选择
+ae2patterngen.gui.recipe_picker.button.cancel=放弃
+ae2patterngen.gui.recipe_picker.status.previewed=已预览 #%s，如确认请点右侧“选择”
+ae2patterngen.gui.recipe_picker.status.no_candidate=当前冲突组无可用候选，无法提交。
+ae2patterngen.gui.recipe_picker.status.final_submitted=已提交最终冲突选择，正在完成生成...
+ae2patterngen.gui.recipe_picker.status.batch_submitted=已提交本批冲突选择，等待下一批...
+ae2patterngen.gui.recipe_picker.status.default=候选样板 %s/%s，点击条目预览，点右侧按钮提交，按 ESC 仅关闭
+ae2patterngen.gui.recipe_picker.status.default_empty=当前冲突组没有可选配方，可点“放弃”取消
+ae2patterngen.gui.recipe_picker.preview.input=输入: %s
+ae2patterngen.gui.recipe_picker.detail.not_selected=未选择候选样板
+ae2patterngen.gui.recipe_picker.detail.meta=元信息
+ae2patterngen.gui.recipe_picker.detail.machine=机器: %s
+ae2patterngen.gui.recipe_picker.detail.recipe_map=配方表: %s
+ae2patterngen.gui.recipe_picker.detail.duration=耗时: %s tick
+ae2patterngen.gui.recipe_picker.detail.input_items=输入物品
+ae2patterngen.gui.recipe_picker.detail.input_fluids=输入流体
+ae2patterngen.gui.recipe_picker.detail.output_items=输出物品
+ae2patterngen.gui.recipe_picker.detail.output_fluids=输出流体
+ae2patterngen.gui.recipe_picker.detail.special_items=特殊项
+
+# 命令
+ae2patterngen.command.help.title==== AE2 样板生成器 ===
+ae2patterngen.command.help.list=/patterngen list - 列出所有配方表
+ae2patterngen.command.help.count=/patterngen count <配方表ID> [输出矿辞] [输入矿辞] [NC物品] [输入黑名单] [输出黑名单] - 预览匹配数量
+ae2patterngen.command.help.generate=/patterngen generate <配方表ID> [输出矿辞] [输入矿辞] [NC物品] [输入黑名单] [输出黑名单] - 生成样板
+ae2patterngen.command.list.available_maps=可用的配方表 (%s 个):
+ae2patterngen.command.list.entry=  %s (%s)
+ae2patterngen.command.generate.usage=用法: /patterngen generate <配方表ID> [输出矿辞] [输入矿辞] [NC物品]
+ae2patterngen.command.count.usage=用法: /patterngen count <配方表ID> [输出矿辞] [输入矿辞] [NC物品]
+ae2patterngen.command.only_player=此命令只能由玩家执行。
+ae2patterngen.command.no_matching_recipe=没有找到匹配的配方。
+ae2patterngen.command.generate.insufficient_blank_pattern=生成失败: 空白样板不足。
+ae2patterngen.command.generate.required_vs_owned=需要 %s 个，但你只有 %s 个。
+ae2patterngen.command.generate.start=正在扣除空白样板并生成 %s 个成品...
+ae2patterngen.command.generate.done=完成! 放入背包: %s, 掉落地面: %s
+ae2patterngen.command.map_not_found=未找到匹配的配方表: %s
+ae2patterngen.command.matched_maps=匹配到配方表: %s
+ae2patterngen.command.filter_result=原始配方: %s, 过滤后: %s
+ae2patterngen.command.count.result=匹配到 %s 个配方
+
+# Tooltip
+ae2patterngen.tooltip.feature.title=[功能特性]
+ae2patterngen.tooltip.feature.batch_encode=批量编码
+ae2patterngen.tooltip.feature.batch_encode.desc=将 GregTech 机器配方批量导出为 AE2 处理模式样板
+ae2patterngen.tooltip.feature.smart_filter=智能过滤
+ae2patterngen.tooltip.feature.smart_filter.desc=支持正则匹配、材料替换与电压等级匹配限制
+ae2patterngen.tooltip.feature.conflict_resolution=配方冲突
+ae2patterngen.tooltip.feature.conflict_resolution.desc=遇到多个匹配配方时支持通过手动 GUI 进行挑选
+ae2patterngen.tooltip.feature.virtual_storage=虚拟仓储
+ae2patterngen.tooltip.feature.virtual_storage.desc=样板生成后存于内部虚拟硬盘，不占用玩家背包
+ae2patterngen.tooltip.feature.equivalent_consume=等价消耗
+ae2patterngen.tooltip.feature.equivalent_consume.desc=自动从绑定的 ME 网络或背包中扣除空白样板
+ae2patterngen.tooltip.usage.title=[操作方式]
+ae2patterngen.tooltip.usage.right_click_air=右键 (空气)
+ae2patterngen.tooltip.usage.right_click_air.desc=打开生成配置界面
+ae2patterngen.tooltip.usage.shift_right_click_air=Shift + 右键 (空气)
+ae2patterngen.tooltip.usage.shift_right_click_air.desc=打开虚拟样板管理器
+ae2patterngen.tooltip.usage.shift_right_click_block=Shift + 右键 (方块)
+ae2patterngen.tooltip.usage.shift_right_click_block.desc=检测方块属性；若为容器则批量导出虚拟样板
+ae2patterngen.tooltip.usage.network_binding=网络绑定
+ae2patterngen.tooltip.usage.network_binding.desc=通过安全终端与 ME 网络进行绑定
+ae2patterngen.tooltip.hint.quick_open=右键打开生成器 GUI
+ae2patterngen.tooltip.hint.quick_storage=Shift+右键空气打开仓储界面
+ae2patterngen.tooltip.hint.quick_detect_export=Shift+右键方块检测属性/导出样板
+ae2patterngen.tooltip.hint.hold_shift_prefix=按住
+ae2patterngen.tooltip.key.shift=Shift
+ae2patterngen.tooltip.hint.hold_shift=查看详细功能
+
+# 消息 - 仓储
+ae2patterngen.msg.storage.empty_extract=[AE2PatternGen] 仓储为空，无可取出的样板。
+ae2patterngen.msg.storage.inventory_full=[AE2PatternGen] 背包已满，无法取出样板。
+ae2patterngen.msg.storage.extracted=[AE2PatternGen] 已取出 %s 个样板到背包。
+ae2patterngen.msg.storage.extracted_with_remaining=[AE2PatternGen] 已取出 %s 个样板到背包 (剩余 %s 个)。
+ae2patterngen.msg.storage.already_empty=[AE2PatternGen] 仓储已为空。
+ae2patterngen.msg.storage.cleared=[AE2PatternGen] 已清空 %s 个样板。
+ae2patterngen.msg.storage.delete_invalid=[AE2PatternGen] 删除失败: 索引无效。
+ae2patterngen.msg.storage.deleted=[AE2PatternGen] 已删除: %s (剩余 %s 个)。
+
+# 消息 - 生成
+ae2patterngen.msg.generate.storage_not_empty=[AE2PatternGen] 仓储中仍有 %s 个未清空样板 (来源: %s)。请先取出或清空后再生成。
+ae2patterngen.msg.generate.no_matching_map=[AE2PatternGen] 未找到匹配的配方表: %s
+ae2patterngen.msg.generate.matched_maps=[AE2PatternGen] 匹配到配方表: %s
+ae2patterngen.msg.generate.filter_result=[AE2PatternGen] 原始配方: %s, 过滤后: %s
+ae2patterngen.msg.generate.no_match_after_filter=[AE2PatternGen] 没有找到匹配的配方 (请检查正则/矿辞)。
+ae2patterngen.msg.generate.replacement_applied=[AE2PatternGen] 已应用矿辞替换规则。
+ae2patterngen.msg.generate.conflicts_detected=[AE2PatternGen] 检测到 %s 组配方冲突，请进行人工选择。
+
+# 消息 - 冲突
+ae2patterngen.msg.conflict.cancelled=[AE2PatternGen] 已取消本次冲突筛选。
+ae2patterngen.msg.conflict.session_changed=[AE2PatternGen] 冲突会话已变更，请在最新页面重新选择。
+ae2patterngen.msg.conflict.session_empty=[AE2PatternGen] 冲突会话异常: 当前冲突组为空，已中止本次处理。
+ae2patterngen.msg.conflict.invalid_selection=[AE2PatternGen] 无效选择索引: %s，请重新选择。
+ae2patterngen.msg.conflict.session_updated=[AE2PatternGen] 冲突会话已更新，请按最新列表重新选择。
+ae2patterngen.msg.conflict.no_valid_selection=[AE2PatternGen] 未收到有效的选择结果。
+ae2patterngen.msg.conflict.session_empty_group=[AE2PatternGen] 冲突会话异常: 当前组为空。
+ae2patterngen.msg.conflict.invalid_batch_selection=[AE2PatternGen] 选择索引无效: %s，请重新选择。
+
+# 消息 - 物品
+ae2patterngen.msg.item.block_not_detectable=[AE2PatternGen] 该方块不支持探测属性。
+ae2patterngen.msg.item.detected_recipe_map=[AE2PatternGen] 已探测并记录配方表: %s
+ae2patterngen.msg.item.machine_part_unsupported=[AE2PatternGen] 该机器部件不支持探测配方或导出样板。
+ae2patterngen.msg.item.block_extract_unsupported=[AE2PatternGen] 该方块不支持提取数据或样板导出。
+ae2patterngen.msg.item.storage_empty_export=[AE2PatternGen] 仓储为空，无可导出的样板。
+ae2patterngen.msg.item.storage_update_failed=[AE2PatternGen] 仓储更新失败，请稍后重试。
+ae2patterngen.msg.item.exported=[AE2PatternGen] 已导出 %s 个样板到容器。
+ae2patterngen.msg.item.exported_with_remaining=[AE2PatternGen] 已导出 %s 个样板到容器 (剩余 %s 个)。
+
+# 消息 - 样板生成
+ae2patterngen.msg.pattern.no_valid_after_encode=[AE2PatternGen] 编码后无有效样板。
+ae2patterngen.msg.pattern.storage_write_failed=[AE2PatternGen] 仓储写入失败，请稍后重试。
+ae2patterngen.msg.pattern.generated_and_consumed=[AE2PatternGen] 已扣除 %s 个空白样板并生成了等量成品。
+ae2patterngen.msg.pattern.stored_hint=成品已存入仓储。蹲下右键空气查看，蹲下右键容器导出。
+ae2patterngen.msg.pattern.insufficient_blank_pattern=[AE2PatternGen] 生成失败: 需要 %s 个空白样板，但只有 %s 个。
+
+# 消息 - 通用
+ae2patterngen.msg.common.unknown_item=未知物品

@@ -8,6 +8,7 @@ import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.EnumChatFormatting;
 
 import com.github.ae2patterngen.recipe.RecipeEntry;
+import com.github.ae2patterngen.util.I18nUtil;
 
 import cpw.mods.fml.common.network.simpleimpl.IMessage;
 import cpw.mods.fml.common.network.simpleimpl.IMessageHandler;
@@ -61,31 +62,30 @@ public class PacketResolveConflicts implements IMessage {
 
             if (message.cancel) {
                 ConflictSession.stop(uuid);
-                player.addChatMessage(
-                    new ChatComponentText(EnumChatFormatting.YELLOW + "[AE2PatternGen] 放弃本次生成,可进行更详细的筛选避免重复样板"));
+                send(player, EnumChatFormatting.YELLOW, "ae2patterngen.msg.conflict.cancelled");
                 return null;
             }
 
             int serverConflictIndex = ConflictResolutionService.currentServerStartIndex(session);
             if (message.expectedConflictIndex > 0 && message.expectedConflictIndex != serverConflictIndex) {
-                player.addChatMessage(
-                    new ChatComponentText(EnumChatFormatting.RED + "[AE2PatternGen] 冲突会话已变更，请在最新页面重新选择。"));
+                send(player, EnumChatFormatting.RED, "ae2patterngen.msg.conflict.session_changed");
                 ConflictResolutionService.sendCurrentBatch(player, session);
                 return null;
             }
 
             List<RecipeEntry> currentRecipes = session.getCurrentRecipes();
             if (currentRecipes == null || currentRecipes.isEmpty()) {
-                player.addChatMessage(
-                    new ChatComponentText(EnumChatFormatting.RED + "[AE2PatternGen] 冲突会话异常: 当前冲突组为空，已中止本次处理。"));
+                send(player, EnumChatFormatting.RED, "ae2patterngen.msg.conflict.session_empty");
                 ConflictSession.stop(uuid);
                 return null;
             }
 
             if (message.recipeIndex < 0 || message.recipeIndex >= currentRecipes.size()) {
-                player.addChatMessage(
-                    new ChatComponentText(
-                        EnumChatFormatting.RED + "[AE2PatternGen] 无效选择索引: " + message.recipeIndex + "，请重新选择。"));
+                send(
+                    player,
+                    EnumChatFormatting.RED,
+                    "ae2patterngen.msg.conflict.invalid_selection",
+                    message.recipeIndex);
                 ConflictResolutionService.sendCurrentBatch(player, session);
                 return null;
             }
@@ -100,6 +100,10 @@ public class PacketResolveConflicts implements IMessage {
             }
 
             return null;
+        }
+
+        private void send(EntityPlayerMP player, EnumChatFormatting color, String key, Object... args) {
+            player.addChatMessage(new ChatComponentText(color + I18nUtil.tr(key, args)));
         }
     }
 }

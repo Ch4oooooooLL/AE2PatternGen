@@ -12,6 +12,7 @@ import com.github.ae2patterngen.encoder.PatternEncoder;
 import com.github.ae2patterngen.recipe.RecipeEntry;
 import com.github.ae2patterngen.storage.PatternStorage;
 import com.github.ae2patterngen.util.AE2Util;
+import com.github.ae2patterngen.util.I18nUtil;
 import com.github.ae2patterngen.util.InventoryUtil;
 
 /**
@@ -28,7 +29,7 @@ public final class PatternGenerationService {
 
         List<ItemStack> patterns = PatternEncoder.encodeBatch(recipes);
         if (patterns.isEmpty()) {
-            player.addChatMessage(new ChatComponentText(EnumChatFormatting.YELLOW + "[AE2PatternGen] 编码后无有效样板"));
+            send(player, EnumChatFormatting.YELLOW, "ae2patterngen.msg.pattern.no_valid_after_encode");
             return false;
         }
 
@@ -40,13 +41,11 @@ public final class PatternGenerationService {
 
         UUID uuid = player.getUniqueID();
         if (!PatternStorage.save(uuid, patterns, source)) {
-            player.addChatMessage(new ChatComponentText(EnumChatFormatting.RED + "[AE2PatternGen] 仓储写入失败，请稍后重试"));
+            send(player, EnumChatFormatting.RED, "ae2patterngen.msg.pattern.storage_write_failed");
             return false;
         }
-        player.addChatMessage(
-            new ChatComponentText(
-                EnumChatFormatting.GREEN + "[AE2PatternGen] 已扣除 " + requiredCount + " 个空白样板并生成了等量成品。"));
-        player.addChatMessage(new ChatComponentText(EnumChatFormatting.GRAY + "成品已存入仓储! 蹲下右键空气查看，蹲下右键容器导出。"));
+        send(player, EnumChatFormatting.GREEN, "ae2patterngen.msg.pattern.generated_and_consumed", requiredCount);
+        send(player, EnumChatFormatting.GRAY, "ae2patterngen.msg.pattern.stored_hint");
         return true;
     }
 
@@ -58,15 +57,19 @@ public final class PatternGenerationService {
 
         if (!InventoryUtil.consumeItem(player, blankPattern, requiredCount)) {
             int currentHas = InventoryUtil.countItem(player, blankPattern);
-            player.addChatMessage(
-                new ChatComponentText(
-                    EnumChatFormatting.RED + "[AE2PatternGen] 生成失败: 空白样板不足。需要 "
-                        + requiredCount
-                        + " 但只有 "
-                        + currentHas));
+            send(
+                player,
+                EnumChatFormatting.RED,
+                "ae2patterngen.msg.pattern.insufficient_blank_pattern",
+                requiredCount,
+                currentHas);
             return false;
         }
 
         return true;
+    }
+
+    private static void send(EntityPlayerMP player, EnumChatFormatting color, String key, Object... args) {
+        player.addChatMessage(new ChatComponentText(color + I18nUtil.tr(key, args)));
     }
 }

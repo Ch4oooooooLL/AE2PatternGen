@@ -13,6 +13,7 @@ import com.github.ae2patterngen.network.PacketRecipeConflictBatch;
 import com.github.ae2patterngen.network.PacketRecipeConflicts;
 import com.github.ae2patterngen.network.PacketResolveConflictsBatch;
 import com.github.ae2patterngen.recipe.RecipeEntry;
+import com.github.ae2patterngen.util.I18nUtil;
 import com.gtnewhorizons.modularui.api.drawable.shapes.Rectangle;
 import com.gtnewhorizons.modularui.api.screen.ModularWindow;
 import com.gtnewhorizons.modularui.api.screen.UIBuildContext;
@@ -35,7 +36,9 @@ public class GuiRecipePicker {
     public static void open(PacketRecipeConflicts message) {
         // Backward compatibility for single-group packet.
         List<String> productNames = new ArrayList<>();
-        productNames.add(message != null && message.productName != null ? message.productName : "Unknown");
+        productNames.add(
+            message != null && message.productName != null ? message.productName
+                : I18nUtil.tr("ae2patterngen.gui.recipe_picker.unknown_product"));
 
         List<List<RecipeEntry>> groups = new ArrayList<>();
         groups.add(message != null && message.recipes != null ? message.recipes : new ArrayList<RecipeEntry>());
@@ -106,14 +109,15 @@ public class GuiRecipePicker {
 
         TextWidget listTitle = new TextWidget("");
         listTitle.setStringSupplier(
-            () -> EnumChatFormatting.BOLD + "候选样板 ("
-                + state.getCurrentRecipes()
-                    .size()
-                + ")");
+            () -> EnumChatFormatting.BOLD + I18nUtil.tr(
+                "ae2patterngen.gui.recipe_picker.list_title",
+                state.getCurrentRecipes()
+                    .size()));
         listTitle.setPos(8, topY - 10);
         builder.widget(listTitle);
 
-        TextWidget detailTitle = new TextWidget(EnumChatFormatting.BOLD + "右侧详情");
+        TextWidget detailTitle = new TextWidget(
+            EnumChatFormatting.BOLD + I18nUtil.tr("ae2patterngen.gui.recipe_picker.detail_title"));
         detailTitle.setPos(rightX, topY - 10);
         builder.widget(detailTitle);
 
@@ -122,7 +126,8 @@ public class GuiRecipePicker {
         candidateList.setSize(leftW, contentH);
 
         int previewBtnW = leftW - 6 - SELECT_BTN_W - 4;
-        int chooseLabelW = Minecraft.getMinecraft().fontRenderer.getStringWidth("选择");
+        int chooseLabelW = Minecraft.getMinecraft().fontRenderer
+            .getStringWidth(I18nUtil.tr("ae2patterngen.gui.recipe_picker.button.select"));
 
         for (int i = 0; i < rowCapacity; i++) {
             final int recipeIndex = i;
@@ -144,7 +149,8 @@ public class GuiRecipePicker {
                 List<RecipeEntry> currentRecipes = state.getCurrentRecipes();
                 if (recipeIndex < 0 || recipeIndex >= currentRecipes.size()) return;
                 state.selectedRecipeIndex = recipeIndex;
-                state.statusText = EnumChatFormatting.DARK_GRAY + "已预览 #" + (recipeIndex + 1) + "，如确认请点右侧“选择”";
+                state.statusText = EnumChatFormatting.DARK_GRAY
+                    + I18nUtil.tr("ae2patterngen.gui.recipe_picker.status.previewed", recipeIndex + 1);
             });
             candidateList.widget(previewBtn);
 
@@ -196,7 +202,8 @@ public class GuiRecipePicker {
                 List<RecipeEntry> currentRecipes = state.getCurrentRecipes();
                 int chosenIndex = resolveChosenIndex(recipeIndex, state.selectedRecipeIndex, currentRecipes.size());
                 if (chosenIndex < 0) {
-                    state.statusText = EnumChatFormatting.RED + "当前冲突组无可用候选，无法提交。";
+                    state.statusText = EnumChatFormatting.RED
+                        + I18nUtil.tr("ae2patterngen.gui.recipe_picker.status.no_candidate");
                     state.inputLocked = false;
                     return;
                 }
@@ -221,18 +228,21 @@ public class GuiRecipePicker {
                 NetworkHandler.INSTANCE.sendToServer(new PacketResolveConflictsBatch(state.startIndex, false, payload));
                 boolean isFinalConflict = state.currentConflictIndex() >= state.totalConflicts;
                 if (isFinalConflict) {
-                    state.statusText = EnumChatFormatting.YELLOW + "已提交最终冲突选择，正在完成生成...";
+                    state.statusText = EnumChatFormatting.YELLOW
+                        + I18nUtil.tr("ae2patterngen.gui.recipe_picker.status.final_submitted");
                     activeState = null;
                     Minecraft.getMinecraft()
                         .displayGuiScreen(null);
                     return;
                 }
                 state.awaitingServer = true;
-                state.statusText = EnumChatFormatting.YELLOW + "已提交本批冲突选择，等待下一批...";
+                state.statusText = EnumChatFormatting.YELLOW
+                    + I18nUtil.tr("ae2patterngen.gui.recipe_picker.status.batch_submitted");
             });
             candidateList.widget(selectBtn);
 
-            TextWidget selectBtnText = new TextWidget(EnumChatFormatting.BLACK + "选择");
+            TextWidget selectBtnText = new TextWidget(
+                EnumChatFormatting.BLACK + I18nUtil.tr("ae2patterngen.gui.recipe_picker.button.select"));
             selectBtnText.setEnabled(
                 widget -> isValidRecipeIndex(
                     recipeIndex,
@@ -292,8 +302,10 @@ public class GuiRecipePicker {
         });
         builder.widget(cancelBtn);
 
-        TextWidget cancelBtnText = new TextWidget(EnumChatFormatting.BLACK + "放弃");
-        cancelBtnText.setPos(cancelBtnX + 15, cancelBtnY + 2);
+        String cancelText = I18nUtil.tr("ae2patterngen.gui.recipe_picker.button.cancel");
+        int cancelTextWidth = Minecraft.getMinecraft().fontRenderer.getStringWidth(cancelText);
+        TextWidget cancelBtnText = new TextWidget(EnumChatFormatting.BLACK + cancelText);
+        cancelBtnText.setPos(cancelBtnX + Math.max(2, (cancelBtnW - cancelTextWidth) / 2), cancelBtnY + 2);
         builder.widget(cancelBtnText);
 
         return builder.build();
@@ -307,11 +319,12 @@ public class GuiRecipePicker {
 
     private static String formatInputPreview(RecipeEntry recipe, boolean selected) {
         String color = selected ? EnumChatFormatting.DARK_AQUA.toString() : EnumChatFormatting.DARK_GRAY.toString();
-        return color + "输入: " + trimText(buildInputPreview(recipe, 2), 24);
+        return color
+            + I18nUtil.tr("ae2patterngen.gui.recipe_picker.preview.input", trimText(buildInputPreview(recipe, 2), 24));
     }
 
     private static String buildInputPreview(RecipeEntry recipe, int maxParts) {
-        if (recipe == null) return "(无)";
+        if (recipe == null) return I18nUtil.tr("ae2patterngen.gui.common.none");
         List<String> parts = new ArrayList<>();
 
         if (recipe.inputs != null) {
@@ -331,7 +344,7 @@ public class GuiRecipePicker {
         }
 
         int totalCount = countItemStacks(recipe.inputs) + countFluidStacks(recipe.fluidInputs);
-        if (parts.isEmpty()) return "(无)";
+        if (parts.isEmpty()) return I18nUtil.tr("ae2patterngen.gui.common.none");
         String preview = String.join(", ", parts);
         if (totalCount > parts.size()) {
             preview += ", ...";
@@ -354,22 +367,47 @@ public class GuiRecipePicker {
     private static List<String> buildDetailLines(RecipeEntry recipe) {
         ArrayList<String> lines = new ArrayList<>();
         if (recipe == null) {
-            lines.add(EnumChatFormatting.RED + "未选择候选样板");
+            lines.add(EnumChatFormatting.RED + I18nUtil.tr("ae2patterngen.gui.recipe_picker.detail.not_selected"));
             return lines;
         }
 
-        lines.add(EnumChatFormatting.AQUA + "" + EnumChatFormatting.BOLD + "元信息");
-        lines.add(EnumChatFormatting.WHITE + "机器: " + trimText(safeText(recipe.machineDisplayName), 24));
-        lines.add(EnumChatFormatting.WHITE + "配方表: " + trimText(safeText(recipe.recipeMapId), 24));
-        lines.add(EnumChatFormatting.WHITE + "耗时: " + recipe.duration + " tick");
+        lines.add(
+            EnumChatFormatting.AQUA + ""
+                + EnumChatFormatting.BOLD
+                + I18nUtil.tr("ae2patterngen.gui.recipe_picker.detail.meta"));
+        lines.add(
+            EnumChatFormatting.WHITE + I18nUtil.tr(
+                "ae2patterngen.gui.recipe_picker.detail.machine",
+                trimText(safeText(recipe.machineDisplayName), 24)));
+        lines.add(
+            EnumChatFormatting.WHITE + I18nUtil
+                .tr("ae2patterngen.gui.recipe_picker.detail.recipe_map", trimText(safeText(recipe.recipeMapId), 24)));
+        lines.add(
+            EnumChatFormatting.WHITE + I18nUtil.tr("ae2patterngen.gui.recipe_picker.detail.duration", recipe.duration));
         lines.add(EnumChatFormatting.WHITE + "EU/t: " + recipe.euPerTick);
         lines.add("");
 
-        appendItemSection(lines, "输入物品", recipe.inputs, 20);
-        appendFluidSection(lines, "输入流体", recipe.fluidInputs, 20);
-        appendItemSection(lines, "输出物品", recipe.outputs, 20);
-        appendFluidSection(lines, "输出流体", recipe.fluidOutputs, 20);
-        appendItemSection(lines, "特殊项", recipe.specialItems, 20);
+        appendItemSection(lines, I18nUtil.tr("ae2patterngen.gui.recipe_picker.detail.input_items"), recipe.inputs, 20);
+        appendFluidSection(
+            lines,
+            I18nUtil.tr("ae2patterngen.gui.recipe_picker.detail.input_fluids"),
+            recipe.fluidInputs,
+            20);
+        appendItemSection(
+            lines,
+            I18nUtil.tr("ae2patterngen.gui.recipe_picker.detail.output_items"),
+            recipe.outputs,
+            20);
+        appendFluidSection(
+            lines,
+            I18nUtil.tr("ae2patterngen.gui.recipe_picker.detail.output_fluids"),
+            recipe.fluidOutputs,
+            20);
+        appendItemSection(
+            lines,
+            I18nUtil.tr("ae2patterngen.gui.recipe_picker.detail.special_items"),
+            recipe.specialItems,
+            20);
         return lines;
     }
 
@@ -377,7 +415,7 @@ public class GuiRecipePicker {
         int count = countItemStacks(stacks);
         lines.add(EnumChatFormatting.AQUA + "" + EnumChatFormatting.BOLD + title + " (" + count + ")");
         if (count == 0) {
-            lines.add(EnumChatFormatting.GRAY + " - (无)");
+            lines.add(EnumChatFormatting.GRAY + " - " + I18nUtil.tr("ae2patterngen.gui.common.none"));
             lines.add("");
             return;
         }
@@ -396,7 +434,7 @@ public class GuiRecipePicker {
         int count = countFluidStacks(fluids);
         lines.add(EnumChatFormatting.AQUA + "" + EnumChatFormatting.BOLD + title + " (" + count + ")");
         if (count == 0) {
-            lines.add(EnumChatFormatting.GRAY + " - (无)");
+            lines.add(EnumChatFormatting.GRAY + " - " + I18nUtil.tr("ae2patterngen.gui.common.none"));
             lines.add("");
             return;
         }
@@ -417,7 +455,7 @@ public class GuiRecipePicker {
     }
 
     private static String getPrimaryOutputName(RecipeEntry recipe) {
-        if (recipe == null) return "(未知)";
+        if (recipe == null) return I18nUtil.tr("ae2patterngen.gui.common.unknown");
         if (recipe.outputs != null) {
             for (ItemStack out : recipe.outputs) {
                 if (out != null) {
@@ -432,7 +470,7 @@ public class GuiRecipePicker {
                 }
             }
         }
-        return "(未知)";
+        return I18nUtil.tr("ae2patterngen.gui.common.unknown");
     }
 
     private static int countItemStacks(ItemStack[] stacks) {
@@ -481,7 +519,7 @@ public class GuiRecipePicker {
     }
 
     private static String safeText(String text) {
-        return text != null && !text.isEmpty() ? text : "(无)";
+        return text != null && !text.isEmpty() ? text : I18nUtil.tr("ae2patterngen.gui.common.none");
     }
 
     private static int[] buildSubmittedSelections(int[] selections, int expectedCount) {
@@ -527,7 +565,7 @@ public class GuiRecipePicker {
         int current = state.currentConflictIndex();
         int total = state.totalConflicts;
         int remaining = current > 0 ? Math.max(0, total - current + 1) : Math.max(0, total);
-        return "配方冲突: " + productName + " | 剩余待选: " + remaining;
+        return I18nUtil.tr("ae2patterngen.gui.recipe_picker.title", productName, remaining);
     }
 
     private static String buildDefaultStatusText(ClientBatchState state) {
@@ -536,8 +574,9 @@ public class GuiRecipePicker {
         int current = state.currentConflictIndex();
         int total = state.totalConflicts;
         return recipeCount > 0
-            ? EnumChatFormatting.DARK_GRAY + "候选样板 " + current + "/" + total + "，点击条目预览，点右侧按钮提交，按 ESC 仅关闭"
-            : EnumChatFormatting.RED + "当前冲突组没有可选配方，可点“放弃”取消";
+            ? EnumChatFormatting.DARK_GRAY
+                + I18nUtil.tr("ae2patterngen.gui.recipe_picker.status.default", current, total)
+            : EnumChatFormatting.RED + I18nUtil.tr("ae2patterngen.gui.recipe_picker.status.default_empty");
     }
 
     public static class ClientBatchState {
@@ -621,9 +660,11 @@ public class GuiRecipePicker {
         }
 
         String getCurrentProductName() {
-            if (localIndex < 0 || localIndex >= productNames.size()) return "(未知产物)";
+            if (localIndex < 0 || localIndex >= productNames.size()) {
+                return I18nUtil.tr("ae2patterngen.gui.recipe_picker.unknown_product");
+            }
             String name = productNames.get(localIndex);
-            return name != null ? name : "(未知产物)";
+            return name != null ? name : I18nUtil.tr("ae2patterngen.gui.recipe_picker.unknown_product");
         }
 
         List<RecipeEntry> getCurrentRecipes() {

@@ -8,6 +8,7 @@ import net.minecraft.util.EnumChatFormatting;
 import com.github.ae2patterngen.AE2PatternGen;
 import com.github.ae2patterngen.network.NetworkHandler;
 import com.github.ae2patterngen.network.PacketStorageAction;
+import com.github.ae2patterngen.util.I18nUtil;
 import com.gtnewhorizons.modularui.api.screen.ModularWindow;
 import com.gtnewhorizons.modularui.api.screen.UIBuildContext;
 import com.gtnewhorizons.modularui.common.widget.ButtonWidget;
@@ -24,7 +25,8 @@ public class GuiPatternDetail {
         ModularWindow.Builder builder = ModularWindow.builder(GUI_W, GUI_H);
         builder.setBackground(com.gtnewhorizons.modularui.api.ModularUITextures.VANILLA_BACKGROUND);
 
-        TextWidget titleText = new TextWidget(EnumChatFormatting.BOLD + "▸ 样板详情 #" + (patternIndex + 1));
+        TextWidget titleText = new TextWidget(
+            EnumChatFormatting.BOLD + I18nUtil.tr("ae2patterngen.gui.pattern_detail.title", patternIndex + 1));
         titleText.setScale(1.2f);
         titleText.setSize(GUI_W - 16, 20);
         titleText.setPos(8, 8);
@@ -35,13 +37,14 @@ public class GuiPatternDetail {
         scrollable.setSize(GUI_W - 16, GUI_H - 24 - 32);
 
         int y = 0;
-        TextWidget inTitle = new TextWidget(EnumChatFormatting.BOLD + "输入 (" + inputNames.size() + ")");
+        TextWidget inTitle = new TextWidget(
+            EnumChatFormatting.BOLD + I18nUtil.tr("ae2patterngen.gui.pattern_detail.input.title", inputNames.size()));
         inTitle.setPos(4, y);
         scrollable.widget(inTitle);
         y += 12;
 
         if (inputNames.isEmpty()) {
-            TextWidget emptyIn = new TextWidget(EnumChatFormatting.GRAY + "(无)");
+            TextWidget emptyIn = new TextWidget(EnumChatFormatting.GRAY + I18nUtil.tr("ae2patterngen.gui.common.none"));
             emptyIn.setPos(8, y);
             scrollable.widget(emptyIn);
             y += 12;
@@ -55,13 +58,15 @@ public class GuiPatternDetail {
         }
         y += 8;
 
-        TextWidget outTitle = new TextWidget(EnumChatFormatting.BOLD + "输出 (" + outputNames.size() + ")");
+        TextWidget outTitle = new TextWidget(
+            EnumChatFormatting.BOLD + I18nUtil.tr("ae2patterngen.gui.pattern_detail.output.title", outputNames.size()));
         outTitle.setPos(4, y);
         scrollable.widget(outTitle);
         y += 12;
 
         if (outputNames.isEmpty()) {
-            TextWidget emptyOut = new TextWidget(EnumChatFormatting.GRAY + "(无)");
+            TextWidget emptyOut = new TextWidget(
+                EnumChatFormatting.GRAY + I18nUtil.tr("ae2patterngen.gui.common.none"));
             emptyOut.setPos(8, y);
             scrollable.widget(emptyOut);
             y += 12;
@@ -83,7 +88,7 @@ public class GuiPatternDetail {
         btnDelete.setPos(GUI_W / 2 - btnW - 4, btnY);
         btnDelete.setSize(btnW, btnH);
         btnDelete.setBackground(com.gtnewhorizons.modularui.api.ModularUITextures.VANILLA_BUTTON_NORMAL);
-        TextWidget btnDelText = new TextWidget("删除此样板");
+        TextWidget btnDelText = new TextWidget(I18nUtil.tr("ae2patterngen.gui.pattern_detail.button.delete"));
         btnDelText.setPos(GUI_W / 2 - btnW - 4 + 16, btnY + 6);
         btnDelete.setOnClick((cd, w) -> {
             NetworkHandler.INSTANCE
@@ -97,7 +102,7 @@ public class GuiPatternDetail {
         btnBack.setPos(GUI_W / 2 + 4, btnY);
         btnBack.setSize(btnW, btnH);
         btnBack.setBackground(com.gtnewhorizons.modularui.api.ModularUITextures.VANILLA_BUTTON_NORMAL);
-        TextWidget btnBackText = new TextWidget("返回");
+        TextWidget btnBackText = new TextWidget(I18nUtil.tr("ae2patterngen.gui.common.back"));
         btnBackText.setPos(GUI_W / 2 + 4 + 32, btnY + 6);
         btnBack.setOnClick(
             (cd, w) -> { AE2PatternGen.proxy.openPatternStorageScreen(Minecraft.getMinecraft().thePlayer); });
