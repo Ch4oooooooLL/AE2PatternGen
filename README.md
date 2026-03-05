@@ -39,9 +39,8 @@ AE2 Pattern Generator 是一个专为 Minecraft 1.7.10 (如 GregTech New Horizon
 
 ## 📝 待办列表
 
-1. 取消字符硬编码，添加多语言支持
-2. 建立统一 Forge 配置类
-3. 继续考虑更多的平衡性调整
+1. 建立统一 Forge 配置类
+2. 继续考虑更多的平衡性调整
 
 ---
 
