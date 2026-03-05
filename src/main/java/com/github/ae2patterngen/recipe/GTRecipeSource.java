@@ -3,10 +3,15 @@ package com.github.ae2patterngen.recipe;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import net.minecraft.init.Items;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.crafting.FurnaceRecipes;
 
 import gregtech.api.recipe.RecipeMap;
 import gregtech.api.util.GTRecipe;
@@ -43,24 +48,53 @@ public class GTRecipeSource {
      * @return 匹配到的配方表 ID 列表
      */
     public static List<String> findMatchingRecipeMaps(String keyword) {
-        List<String> matches = new ArrayList<>();
-        String lowerKeyword = keyword.toLowerCase();
-
-        // 1. 精确匹配
-        if (RecipeMap.ALL_RECIPE_MAPS.containsKey(keyword)) {
-            matches.add(keyword);
-            return matches;
+        if (keyword == null) {
+            return new ArrayList<>();
         }
 
-        // 2. 不区分大小写的子串匹配 (匹配 ID 即可)
-        for (String mapId : RecipeMap.ALL_RECIPE_MAPS.keySet()) {
+        String normalized = keyword.trim();
+        if (normalized.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        Set<String> matches = new LinkedHashSet<>();
+        String lowerKeyword = normalized.toLowerCase();
+
+        // 1. 精确匹配
+        if (RecipeMap.ALL_RECIPE_MAPS.containsKey(normalized)) {
+            matches.add(normalized);
+        }
+
+        // 2. 兼容旧格式 ID (xxx_1_2_3_4_5)
+        RecipeMap<?> fromLegacy = RecipeMap.getFromOldIdentifier(normalized);
+        if (fromLegacy != null) {
+            matches.add(fromLegacy.unlocalizedName);
+        }
+
+        // 3. 不区分大小写的子串匹配 (map id + NEI transfer id)
+        for (Map.Entry<String, RecipeMap<?>> entry : RecipeMap.ALL_RECIPE_MAPS.entrySet()) {
+            String mapId = entry.getKey();
+            RecipeMap<?> map = entry.getValue();
+
             if (mapId.toLowerCase()
                 .contains(lowerKeyword)) {
                 matches.add(mapId);
+                continue;
+            }
+
+            if (map != null && map.getFrontend() != null
+                && map.getFrontend()
+                    .getUIProperties() != null) {
+                String transferId = map.getFrontend()
+                    .getUIProperties().neiTransferRectId;
+                if (transferId != null && transferId.toLowerCase()
+                    .contains(lowerKeyword)) {
+                    matches.add(mapId);
+                }
             }
         }
 
-        return matches;
+        return new ArrayList<>(matches);
     }
 
     /**
@@ -71,7 +105,7 @@ public class GTRecipeSource {
      */
     public static List<RecipeEntry> collectRecipes(String keyword) {
         List<RecipeEntry> entries = new ArrayList<>();
-        java.util.Set<String> processedKeys = new java.util.HashSet<>();
+        Set<String> processedKeys = new java.util.HashSet<>();
 
         List<String> matchedMaps = findMatchingRecipeMaps(keyword);
         if (matchedMaps.isEmpty()) {
@@ -83,40 +117,151 @@ public class GTRecipeSource {
             if (targetMap == null) continue;
 
             Collection<GTRecipe> recipes = targetMap.getAllRecipes();
-            if (recipes == null) continue;
+            if (recipes != null) {
+                for (GTRecipe recipe : recipes) {
+                    if (recipe == null || !recipe.mEnabled) continue;
 
-            for (GTRecipe recipe : recipes) {
-                if (recipe == null || !recipe.mEnabled) continue;
+                    // 生成配方唯一性 Key (基于输入、输出、时长、EU)
+                    String recipeKey = generateRecipeKey(recipe);
+                    if (!processedKeys.add(recipeKey)) continue;
 
-                // 生成配方唯一性 Key (基于输入、输出、时长、EU)
-                String recipeKey = generateRecipeKey(recipe);
-                if (!processedKeys.add(recipeKey)) continue;
+                    ItemStack[] normalInputs = recipe.mInputs;
+                    ItemStack[] specialItems = new ItemStack[0];
+                    if (recipe.mSpecialItems instanceof ItemStack[]) {
+                        specialItems = (ItemStack[]) recipe.mSpecialItems;
+                    } else if (recipe.mSpecialItems instanceof ItemStack) {
+                        specialItems = new ItemStack[] { (ItemStack) recipe.mSpecialItems };
+                    }
 
-                ItemStack[] normalInputs = recipe.mInputs;
-                ItemStack[] specialItems = new ItemStack[0];
-                if (recipe.mSpecialItems instanceof ItemStack[]) {
-                    specialItems = (ItemStack[]) recipe.mSpecialItems;
-                } else if (recipe.mSpecialItems instanceof ItemStack) {
-                    specialItems = new ItemStack[] { (ItemStack) recipe.mSpecialItems };
+                    RecipeEntry entry = new RecipeEntry(
+                        "gt",
+                        mapId,
+                        mapId,
+                        normalInputs,
+                        recipe.mOutputs,
+                        recipe.mFluidInputs,
+                        recipe.mFluidOutputs,
+                        specialItems,
+                        recipe.mDuration,
+                        recipe.mEUt);
+
+                    entries.add(entry);
                 }
+            }
 
-                RecipeEntry entry = new RecipeEntry(
+            collectDynamicSmeltingRecipesIfNeeded(mapId, targetMap, entries, processedKeys);
+        }
+
+        return entries;
+    }
+
+    /**
+     * GT 的 furnace / microwave 使用 NonGTBackend 动态查配方，不会预先填充到 getAllRecipes()。
+     * 因此这里回退到原版 FurnaceRecipes 枚举并构造 RecipeEntry。
+     */
+    private static void collectDynamicSmeltingRecipesIfNeeded(String mapId, RecipeMap<?> targetMap,
+        List<RecipeEntry> entries, Set<String> processedKeys) {
+        if (targetMap == null || (!"gt.recipe.furnace".equals(mapId) && !"gt.recipe.microwave".equals(mapId))) {
+            return;
+        }
+
+        Map<ItemStack, ItemStack> smelting = FurnaceRecipes.smelting()
+            .getSmeltingList();
+        if (smelting == null || smelting.isEmpty()) {
+            return;
+        }
+
+        // NonGTBackend 配方在查询时动态生成。这里通过候选输入触发 findRecipe。
+        // 微波炉有一本书特判，不在原版熔炉表里，手动补一个候选。
+        Set<String> inputDedup = new LinkedHashSet<>();
+        for (Map.Entry<ItemStack, ItemStack> e : smelting.entrySet()) {
+            ItemStack rawInput = e.getKey();
+            if (rawInput == null || rawInput.getItem() == null) {
+                continue;
+            }
+            ItemStack input = rawInput.copy();
+            if (input.stackSize <= 0) {
+                input.stackSize = 1;
+            }
+            String inputKey = stackKey(input);
+            if (!inputDedup.add(inputKey)) {
+                continue;
+            }
+
+            GTRecipe dynamic = targetMap.findRecipeQuery()
+                .items(input)
+                .dontCheckStackSizes(true)
+                .find();
+            if (dynamic == null || !dynamic.mEnabled) {
+                continue;
+            }
+            if ((dynamic.mOutputs == null || dynamic.mOutputs.length == 0)
+                && (dynamic.mFluidOutputs == null || dynamic.mFluidOutputs.length == 0)) {
+                continue;
+            }
+
+            ItemStack[] normalInputs = dynamic.mInputs != null ? dynamic.mInputs : new ItemStack[] { input };
+            ItemStack[] specialItems = new ItemStack[0];
+            if (dynamic.mSpecialItems instanceof ItemStack[]) {
+                specialItems = (ItemStack[]) dynamic.mSpecialItems;
+            } else if (dynamic.mSpecialItems instanceof ItemStack) {
+                specialItems = new ItemStack[] { (ItemStack) dynamic.mSpecialItems };
+            }
+
+            String dynamicKey = generateRecipeKey(dynamic) + "|MAP:" + mapId;
+            if (!processedKeys.add(dynamicKey)) {
+                continue;
+            }
+
+            entries.add(
+                new RecipeEntry(
                     "gt",
                     mapId,
                     mapId,
                     normalInputs,
-                    recipe.mOutputs,
-                    recipe.mFluidInputs,
-                    recipe.mFluidOutputs,
+                    dynamic.mOutputs,
+                    dynamic.mFluidInputs,
+                    dynamic.mFluidOutputs,
                     specialItems,
-                    recipe.mDuration,
-                    recipe.mEUt);
-
-                entries.add(entry);
-            }
+                    dynamic.mDuration,
+                    dynamic.mEUt));
         }
 
-        return entries;
+        if ("gt.recipe.microwave".equals(mapId)) {
+            ItemStack microwaveBook = new ItemStack(Items.book, 1, 0);
+            GTRecipe bookRecipe = targetMap.findRecipeQuery()
+                .items(microwaveBook)
+                .dontCheckStackSizes(true)
+                .find();
+            if (bookRecipe != null && bookRecipe.mEnabled
+                && bookRecipe.mOutputs != null
+                && bookRecipe.mOutputs.length > 0) {
+                String bookKey = generateRecipeKey(bookRecipe) + "|MAP:" + mapId;
+                if (processedKeys.add(bookKey)) {
+                    entries.add(
+                        new RecipeEntry(
+                            "gt",
+                            mapId,
+                            mapId,
+                            bookRecipe.mInputs,
+                            bookRecipe.mOutputs,
+                            bookRecipe.mFluidInputs,
+                            bookRecipe.mFluidOutputs,
+                            new ItemStack[0],
+                            bookRecipe.mDuration,
+                            bookRecipe.mEUt));
+                }
+            }
+        }
+    }
+
+    private static String stackKey(ItemStack stack) {
+        if (stack == null || stack.getItem() == null) {
+            return "NULL";
+        }
+        Item item = stack.getItem();
+        Object name = Item.itemRegistry.getNameForObject(item);
+        return String.valueOf(name) + "@" + stack.getItemDamage() + "@" + stack.stackSize;
     }
 
     private static String generateRecipeKey(GTRecipe recipe) {

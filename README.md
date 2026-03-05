@@ -136,6 +136,11 @@ AE2 Pattern Generator 是一个专为 Minecraft 1.7.10 (如 GregTech New Horizon
 
 ## 📜 更新日志
 
+### v1.4.3 (2026-03-05)
+- **修复**: 修复 `gt.recipe.furnace` 与 `gt.recipe.microwave` 无法读取到配方的问题（GT 动态配方不再被 `getAllRecipes()` 漏掉）。
+- **优化**: 配方表匹配新增兼容 `smelting` 等 NEI transfer id，支持通过熔炉常用标识检索到对应 GT 配方表。
+- **优化**: 配方表匹配新增旧版 `RecipeMap` 标识兼容（`legacyIdentifier`）以提升历史配置可用性。
+
 ### v1.4.1 (2026-02-23)
 - **修复**: 修复 `Shift + 右键` 打开存储界面时服务端崩溃 (`NoClassDefFoundError: net/minecraft/client/gui/GuiScreen`)。
 - **修复**: 将存储详情界面的客户端逻辑下沉到 `ClientProxy`，避免服务端路径加载客户端类。

@@ -1,8 +1,8 @@
 package com.github.ae2patterngen.filter;
 
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
-import java.util.regex.Matcher;
 
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -79,7 +79,8 @@ public class BlacklistFilter implements IRecipeFilter {
         }
     }
 
-    static boolean matchesCompiledPattern(Pattern pattern, String displayName, int itemId, int meta, String[] oreNames) {
+    static boolean matchesCompiledPattern(Pattern pattern, String displayName, int itemId, int meta,
+        String[] oreNames) {
         if (pattern == null) return false;
 
         StringBuilder searchTarget = new StringBuilder();
