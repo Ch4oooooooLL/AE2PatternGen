@@ -12,11 +12,8 @@ import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.EnumChatFormatting;
 
 import com.github.ae2patterngen.encoder.PatternEncoder;
-import com.github.ae2patterngen.filter.BlacklistFilter;
 import com.github.ae2patterngen.filter.CompositeFilter;
-import com.github.ae2patterngen.filter.InputOreDictFilter;
-import com.github.ae2patterngen.filter.NCItemFilter;
-import com.github.ae2patterngen.filter.OutputOreDictFilter;
+import com.github.ae2patterngen.filter.RecipeFilterFactory;
 import com.github.ae2patterngen.recipe.GTRecipeSource;
 import com.github.ae2patterngen.recipe.RecipeEntry;
 import com.github.ae2patterngen.util.I18nUtil;
@@ -27,10 +24,10 @@ import com.github.ae2patterngen.util.I18nUtil;
  * 用法:
  * <ul>
  * <li>/patterngen list - 列出所有可用配方表</li>
- * <li>/patterngen rotate &lt;recipeMapId&gt; [outputOreDict] [inputOreDict]
- * [ncItem] [blacklistInput] [blacklistOutput] - 生成样板</li>
- * <li>/patterngen count &lt;recipeMapId&gt; [outputOreDict] [inputOreDict]
- * [ncItem] [blacklistInput] [blacklistOutput] - 预览匹配数量</li>
+ * <li>/patterngen rotate &lt;recipeMapId&gt; [outputFilter] [inputFilter]
+ * [ncFilter] [blacklistInput] [blacklistOutput] - 生成样板</li>
+ * <li>/patterngen count &lt;recipeMapId&gt; [outputFilter] [inputFilter]
+ * [ncFilter] [blacklistInput] [blacklistOutput] - 预览匹配数量</li>
  * </ul>
  */
 public class CommandPatternGen extends CommandBase {
@@ -42,7 +39,7 @@ public class CommandPatternGen extends CommandBase {
 
     @Override
     public String getCommandUsage(ICommandSender sender) {
-        return "/patterngen <list|generate|count> [recipeMapId] [outputOreDict] [inputOreDict] [ncItem] [blacklistInput] [blacklistOutput]";
+        return "/patterngen <list|generate|count> [recipeMapId] [outputFilter] [inputFilter] [ncFilter] [blacklistInput] [blacklistOutput]";
     }
 
     @Override
@@ -191,27 +188,13 @@ public class CommandPatternGen extends CommandBase {
         int totalBefore = recipes.size();
 
         // 3. 构建过滤器
-        CompositeFilter filter = new CompositeFilter();
-        if (outputOreDict != null && !outputOreDict.isEmpty() && !outputOreDict.equals("*")) {
-            filter.addFilter(new OutputOreDictFilter(outputOreDict));
-        }
-        if (inputOreDict != null && !inputOreDict.isEmpty() && !inputOreDict.equals("*")) {
-            filter.addFilter(new InputOreDictFilter(inputOreDict));
-        }
-        if (ncItem != null && !ncItem.isEmpty() && !ncItem.equals("*")) {
-            filter.addFilter(new NCItemFilter(ncItem));
-        }
-        if (args.length > 5 && !args[5].isEmpty() && !args[5].equals("*")) {
-            filter.addFilter(new BlacklistFilter(args[5], true, false));
-        }
-        if (args.length > 6 && !args[6].isEmpty() && !args[6].equals("*")) {
-            filter.addFilter(new BlacklistFilter(args[6], false, true));
-        }
-
-        // 预留: 如果将来命令行增加 Tier 参数，可在此处添加 TierFilter
-        // if (targetTier >= 0) {
-        // filter.addFilter(new TierFilter(targetTier));
-        // }
+        CompositeFilter filter = RecipeFilterFactory.build(
+            outputOreDict,
+            inputOreDict,
+            ncItem,
+            args.length > 5 ? args[5] : null,
+            args.length > 6 ? args[6] : null,
+            -1);
 
         // 4. 应用过滤
         List<RecipeEntry> filtered = new java.util.ArrayList<>();

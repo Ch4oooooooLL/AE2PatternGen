@@ -3,51 +3,73 @@ package com.github.ae2patterngen.filter;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import java.util.regex.Pattern;
-
 import org.junit.Test;
 
 public class BlacklistFilterTest {
 
     @Test
-    public void idTokenWithMetaMatchesOnlyExactMeta() {
-        Pattern pattern = BlacklistFilter.compileKeyword("[8119:12]");
-
-        assertTrue(BlacklistFilter.matchesCompiledPattern(pattern, "Any Item", 8119, 12, new String[] { "oreAny" }));
-        assertFalse(BlacklistFilter.matchesCompiledPattern(pattern, "Any Item", 8119, 11, new String[] { "oreAny" }));
-    }
-
-    @Test
     public void idTokenWithoutMetaMatchesAnyMeta() {
-        Pattern pattern = BlacklistFilter.compileKeyword("[8119]");
+        ExplicitStackMatcher matcher = new ExplicitStackMatcher("[8119]");
 
-        assertTrue(BlacklistFilter.matchesCompiledPattern(pattern, "Any Item", 8119, 0, new String[] { "oreAny" }));
-        assertTrue(BlacklistFilter.matchesCompiledPattern(pattern, "Any Item", 8119, 15, new String[] { "oreAny" }));
+        assertTrue(matcher.matches("Copper Dust", 8119, 12, new String[] { "dustCopper" }));
+        assertFalse(matcher.matches("Copper Dust", 8120, 12, new String[] { "dustCopper" }));
     }
 
     @Test
-    public void idTokenCanBeCombinedWithRegexLogic() {
-        Pattern pattern = BlacklistFilter.compileKeyword("dust|[8119:12]");
+    public void idTokenWithMetaMatchesOnlyExactMeta() {
+        ExplicitStackMatcher matcher = new ExplicitStackMatcher("[8119:12]");
 
-        assertTrue(BlacklistFilter.matchesCompiledPattern(pattern, "Copper Dust", 1, 0, new String[] { "dustCopper" }));
-        assertTrue(BlacklistFilter.matchesCompiledPattern(pattern, "Any Item", 8119, 12, new String[] { "oreAny" }));
-        assertFalse(BlacklistFilter.matchesCompiledPattern(pattern, "Any Item", 1, 0, new String[] { "oreAny" }));
+        assertTrue(matcher.matches("Copper Dust", 8119, 12, new String[] { "dustCopper" }));
+        assertFalse(matcher.matches("Copper Dust", 8119, 13, new String[] { "dustCopper" }));
     }
 
     @Test
-    public void nonNumericBracketsRemainRegexCharacterClass() {
-        Pattern pattern = BlacklistFilter.compileKeyword("ingot[AB]");
+    public void oreDictTokenMatchesOreNamesOnly() {
+        ExplicitStackMatcher matcher = new ExplicitStackMatcher("(dustCopper)");
 
-        assertTrue(BlacklistFilter.matchesCompiledPattern(pattern, "ingotA", 1, 0, new String[] { "oreAny" }));
-        assertTrue(BlacklistFilter.matchesCompiledPattern(pattern, "ingotB", 1, 0, new String[] { "oreAny" }));
-        assertFalse(BlacklistFilter.matchesCompiledPattern(pattern, "ingotC", 1, 0, new String[] { "oreAny" }));
+        assertTrue(matcher.matches("Copper Dust", 8119, 12, new String[] { "dustCopper" }));
+        assertFalse(matcher.matches("dustCopper", 8119, 12, new String[0]));
     }
 
     @Test
-    public void explicitIdMetaTokenLike7193_0MatchesExactly() {
-        Pattern pattern = BlacklistFilter.compileKeyword("[7193:0]");
+    public void displayNameTokenMatchesDisplayNameOnly() {
+        ExplicitStackMatcher matcher = new ExplicitStackMatcher("{Copper Dust}");
 
-        assertTrue(BlacklistFilter.matchesCompiledPattern(pattern, "Any Item", 7193, 0, new String[] { "oreAny" }));
-        assertFalse(BlacklistFilter.matchesCompiledPattern(pattern, "Any Item", 7193, 1, new String[] { "oreAny" }));
+        assertTrue(matcher.matches("Copper Dust", 8119, 12, new String[] { "dustCopper" }));
+        assertFalse(matcher.matches("Machine Part", 8119, 12, new String[] { "Copper Dust" }));
+    }
+
+    @Test
+    public void multipleExplicitTokensUseOrSemantics() {
+        ExplicitStackMatcher matcher = new ExplicitStackMatcher("[8119] (dustCopper) {Machine Part}");
+
+        assertTrue(matcher.matches("Anything", 8119, 0, new String[0]));
+        assertTrue(matcher.matches("Anything", 1, 0, new String[] { "dustCopper" }));
+        assertTrue(matcher.matches("Machine Part", 1, 0, new String[0]));
+        assertFalse(matcher.matches("Other", 1, 0, new String[] { "dustTin" }));
+    }
+
+    @Test
+    public void nestedRegexGroupsRemainValidInsideExplicitToken() {
+        ExplicitStackMatcher matcher = new ExplicitStackMatcher("(dust(?:Copper|Tin))");
+
+        assertTrue(matcher.matches("Anything", 1, 0, new String[] { "dustTin" }));
+        assertFalse(matcher.matches("Anything", 1, 0, new String[] { "dustIron" }));
+    }
+
+    @Test
+    public void bareTextNoLongerMatchesAnything() {
+        ExplicitStackMatcher matcher = new ExplicitStackMatcher("dustCopper");
+
+        assertTrue(matcher.isInvalid());
+        assertFalse(matcher.matches("dustCopper", 8119, 12, new String[] { "dustCopper" }));
+    }
+
+    @Test
+    public void invalidMixedSyntaxDisablesActualMatching() {
+        ExplicitStackMatcher matcher = new ExplicitStackMatcher("[8119] dustCopper");
+
+        assertTrue(matcher.isInvalid());
+        assertFalse(matcher.matches("Copper Dust", 8119, 12, new String[] { "dustCopper" }));
     }
 }

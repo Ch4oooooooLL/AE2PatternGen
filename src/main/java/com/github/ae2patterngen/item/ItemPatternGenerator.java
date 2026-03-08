@@ -618,19 +618,26 @@ public class ItemPatternGenerator extends Item implements INetworkEncodable, IWi
             list.add(
                 EnumChatFormatting.GRAY + "(3) "
                     + EnumChatFormatting.WHITE
+                    + I18nUtil.tr("ae2patterngen.tooltip.feature.explicit_blacklist")
+                    + EnumChatFormatting.GRAY
+                    + ": "
+                    + I18nUtil.tr("ae2patterngen.tooltip.feature.explicit_blacklist.desc"));
+            list.add(
+                EnumChatFormatting.GRAY + "(4) "
+                    + EnumChatFormatting.WHITE
                     + I18nUtil.tr("ae2patterngen.tooltip.feature.conflict_resolution")
                     + EnumChatFormatting.GRAY
                     + ": "
                     + I18nUtil.tr("ae2patterngen.tooltip.feature.conflict_resolution.desc"));
             list.add(
-                EnumChatFormatting.GRAY + "(4) "
+                EnumChatFormatting.GRAY + "(5) "
                     + EnumChatFormatting.WHITE
                     + I18nUtil.tr("ae2patterngen.tooltip.feature.virtual_storage")
                     + EnumChatFormatting.GRAY
                     + ": "
                     + I18nUtil.tr("ae2patterngen.tooltip.feature.virtual_storage.desc"));
             list.add(
-                EnumChatFormatting.GRAY + "(5) "
+                EnumChatFormatting.GRAY + "(6) "
                     + EnumChatFormatting.WHITE
                     + I18nUtil.tr("ae2patterngen.tooltip.feature.equivalent_consume")
                     + EnumChatFormatting.GRAY

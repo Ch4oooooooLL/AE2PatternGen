@@ -11,9 +11,7 @@ public class OreDictUtilTest {
         int[] oreIds = new int[] { 0, 32767, -1, 2 };
         String[] oreNames = new String[] { "oreCopper", "oreTin", "dustIron" };
 
-        assertArrayEquals(
-            new String[] { "oreCopper", "dustIron" },
-            OreDictUtil.getOreNamesSafe(oreIds, oreNames));
+        assertArrayEquals(new String[] { "oreCopper", "dustIron" }, OreDictUtil.getOreNamesSafe(oreIds, oreNames));
     }
 
     @Test

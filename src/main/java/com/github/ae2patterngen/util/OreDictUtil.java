@@ -15,8 +15,12 @@ public final class OreDictUtil {
 
     public static String[] getOreNamesSafe(ItemStack stack) {
         if (stack == null) return new String[0];
-        int[] oreIds = OreDictionary.getOreIDs(stack);
-        return getOreNamesSafe(oreIds, OreDictionary.getOreNames());
+        try {
+            int[] oreIds = OreDictionary.getOreIDs(stack);
+            return getOreNamesSafe(oreIds, OreDictionary.getOreNames());
+        } catch (RuntimeException ignored) {
+            return new String[0];
+        }
     }
 
     static String[] getOreNamesSafe(int[] oreIds, String[] oreNamesById) {

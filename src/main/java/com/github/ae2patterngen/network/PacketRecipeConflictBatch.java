@@ -47,17 +47,15 @@ public class PacketRecipeConflictBatch implements IMessage {
 
         List<String> names = new ArrayList<>();
         List<List<RecipeEntry>> groups = new ArrayList<>();
-        for (String key : session.groupKeys) {
-            List<RecipeEntry> allRecipes = session.conflictGroups.get(key);
-            if (allRecipes != null && allRecipes.size() > maxCandidates) {
-                maxCandidates = allRecipes.size();
-            }
-        }
         for (int i = start; i < end; i++) {
             String key = session.groupKeys.get(i);
             names.add(key != null ? key : "Unknown");
             List<RecipeEntry> recipes = session.conflictGroups.get(key);
-            groups.add(recipes != null ? recipes : new ArrayList<RecipeEntry>());
+            List<RecipeEntry> safeRecipes = recipes != null ? recipes : new ArrayList<RecipeEntry>();
+            groups.add(safeRecipes);
+            if (safeRecipes.size() > maxCandidates) {
+                maxCandidates = safeRecipes.size();
+            }
         }
 
         return new PacketRecipeConflictBatch(

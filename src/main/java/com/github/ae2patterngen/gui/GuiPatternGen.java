@@ -6,6 +6,8 @@ import java.util.List;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumChatFormatting;
 
+import com.github.ae2patterngen.filter.CompositeFilter;
+import com.github.ae2patterngen.filter.RecipeFilterFactory;
 import com.github.ae2patterngen.item.ItemPatternGenerator;
 import com.github.ae2patterngen.network.NetworkHandler;
 import com.github.ae2patterngen.network.PacketGeneratePatterns;
@@ -131,6 +133,7 @@ public class GuiPatternGen {
         final int[] currentTierIndex = new int[] { Math.max(0, Math.min(tiers.size() - 1, savedTier + 1)) };
 
         ButtonWidget btnTier = new ButtonWidget();
+        btnTier.setSynced(false, false);
         btnTier.setPos(inputX, refY + 68);
         btnTier.setSize(fieldW, 14);
         btnTier.setBackground(new Rectangle().setColor(0xFF1E1E30));
@@ -187,7 +190,17 @@ public class GuiPatternGen {
         regexHint.setPos(6, refY + 50 + 3);
         scrollable.widget(regexHint);
 
-        refY += 62;
+        TextWidget blacklistHint = new TextWidget(
+            EnumChatFormatting.DARK_GRAY + I18nUtil.tr("ae2patterngen.gui.pattern_gen.hint.blacklist"));
+        blacklistHint.setPos(6, refY + 60 + 3);
+        scrollable.widget(blacklistHint);
+
+        TextWidget blacklistExamples = new TextWidget(
+            EnumChatFormatting.DARK_GRAY + I18nUtil.tr("ae2patterngen.gui.pattern_gen.hint.blacklist_examples"));
+        blacklistExamples.setPos(6, refY + 70 + 3);
+        scrollable.widget(blacklistExamples);
+
+        refY += 82;
 
         int loadedRuleCount = com.github.ae2patterngen.config.ReplacementConfig.load();
 
@@ -204,6 +217,7 @@ public class GuiPatternGen {
         int btnCfgX = GUI_W - 16 - 6 - 80;
         int btnCfgY = refY + 14;
         ButtonWidget btnConfig = new ButtonWidget();
+        btnConfig.setSynced(false, false);
         btnConfig.setPos(btnCfgX, btnCfgY);
         btnConfig.setSize(80, 20);
         btnConfig.setBackground(com.gtnewhorizons.modularui.api.ModularUITextures.VANILLA_BUTTON_NORMAL);
@@ -247,6 +261,7 @@ public class GuiPatternGen {
         };
 
         ButtonWidget btnList = new ButtonWidget();
+        btnList.setSynced(false, false);
         btnList.setPos(btnStartX, btnY);
         btnList.setSize(btnW, btnH);
         btnList.setBackground(com.gtnewhorizons.modularui.api.ModularUITextures.VANILLA_BUTTON_NORMAL);
@@ -264,6 +279,7 @@ public class GuiPatternGen {
 
         int btnPBX = btnStartX + btnW + 3;
         ButtonWidget btnPreview = new ButtonWidget();
+        btnPreview.setSynced(false, false);
         btnPreview.setPos(btnPBX, btnY);
         btnPreview.setSize(btnW, btnH);
         btnPreview.setBackground(com.gtnewhorizons.modularui.api.ModularUITextures.VANILLA_BUTTON_NORMAL);
@@ -274,13 +290,28 @@ public class GuiPatternGen {
         btnPreview.setOnClick((cd, w) -> {
             saveFunction.run();
             List<RecipeEntry> recipes = GTRecipeSource.collectRecipes(tfRecipeMap.getText());
-            statusMsg[0] = I18nUtil.tr("ae2patterngen.gui.pattern_gen.status.recipes_before_filter", recipes.size());
+            CompositeFilter filter = RecipeFilterFactory.build(
+                tfOutputOre.getText(),
+                tfInputOre.getText(),
+                tfNCItem.getText(),
+                tfBlacklistIn.getText(),
+                tfBlacklistOut.getText(),
+                currentTierIndex[0] - 1);
+            int filteredCount = 0;
+            for (RecipeEntry recipe : recipes) {
+                if (filter.matches(recipe)) {
+                    filteredCount++;
+                }
+            }
+            statusMsg[0] = I18nUtil
+                .tr("ae2patterngen.gui.pattern_gen.status.filter_result", recipes.size(), filteredCount);
         });
         builder.widget(btnPreview);
         builder.widget(btnPreviewText);
 
         int btnGBX = btnStartX + (btnW + 3) * 2;
         ButtonWidget btnGenerate = new ButtonWidget();
+        btnGenerate.setSynced(false, false);
         btnGenerate.setPos(btnGBX, btnY);
         btnGenerate.setSize(btnW, btnH);
         btnGenerate.setBackground(com.gtnewhorizons.modularui.api.ModularUITextures.VANILLA_BUTTON_NORMAL);

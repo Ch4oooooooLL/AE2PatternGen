@@ -1,48 +1,31 @@
 package com.github.ae2patterngen.filter;
 
-import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
-
 import net.minecraft.item.ItemStack;
 
 import com.github.ae2patterngen.recipe.RecipeEntry;
-import com.github.ae2patterngen.util.OreDictUtil;
 
 /**
- * 按输出物品的矿辞名过滤，支持正则表达式
+ * 按输出物品的统一显式筛选语法进行匹配。
  */
 public class OutputOreDictFilter implements IRecipeFilter {
 
-    private final String regexPattern;
-    private final Pattern compiledPattern;
+    private final String matchSource;
+    private final ExplicitStackMatcher matcher;
 
-    public OutputOreDictFilter(String regexPattern) {
-        this.regexPattern = regexPattern;
-        Pattern p = null;
-        try {
-            p = Pattern.compile(regexPattern, Pattern.CASE_INSENSITIVE);
-        } catch (PatternSyntaxException e) {
-            // invalid regex, fallback to literal match
-            p = Pattern.compile(Pattern.quote(regexPattern), Pattern.CASE_INSENSITIVE);
-        }
-        this.compiledPattern = p;
+    public OutputOreDictFilter(String matchSource) {
+        this.matchSource = matchSource;
+        this.matcher = new ExplicitStackMatcher(matchSource);
     }
 
     @Override
     public boolean matches(RecipeEntry recipe) {
-        if (regexPattern == null || regexPattern.isEmpty() || regexPattern.equals("*")) {
+        if (matcher.isDisabled()) {
             return true;
         }
 
         for (ItemStack output : recipe.outputs) {
-            if (output == null) continue;
-
-            String[] oreNames = OreDictUtil.getOreNamesSafe(output);
-            for (String oreName : oreNames) {
-                if (compiledPattern.matcher(oreName)
-                    .find()) {
-                    return true;
-                }
+            if (output != null && matcher.matches(output)) {
+                return true;
             }
         }
         return false;
@@ -50,10 +33,10 @@ public class OutputOreDictFilter implements IRecipeFilter {
 
     @Override
     public String getDescription() {
-        return "输出矿辞匹配: " + regexPattern;
+        return "输出筛选: " + matchSource;
     }
 
     public String getRegexPattern() {
-        return regexPattern;
+        return matchSource;
     }
 }

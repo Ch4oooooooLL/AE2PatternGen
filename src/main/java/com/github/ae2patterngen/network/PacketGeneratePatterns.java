@@ -8,15 +8,13 @@ import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.EnumChatFormatting;
 
 import com.github.ae2patterngen.encoder.OreDictReplacer;
-import com.github.ae2patterngen.filter.BlacklistFilter;
 import com.github.ae2patterngen.filter.CompositeFilter;
-import com.github.ae2patterngen.filter.InputOreDictFilter;
-import com.github.ae2patterngen.filter.NCItemFilter;
-import com.github.ae2patterngen.filter.OutputOreDictFilter;
+import com.github.ae2patterngen.filter.RecipeFilterFactory;
 import com.github.ae2patterngen.recipe.GTRecipeSource;
 import com.github.ae2patterngen.recipe.RecipeEntry;
 import com.github.ae2patterngen.storage.PatternStorage;
 import com.github.ae2patterngen.util.I18nUtil;
+import com.github.ae2patterngen.util.ItemStackUtil;
 
 import cpw.mods.fml.common.network.ByteBufUtils;
 import cpw.mods.fml.common.network.simpleimpl.IMessage;
@@ -85,6 +83,19 @@ public class PacketGeneratePatterns implements IMessage {
             EntityPlayerMP player = ctx.getServerHandler().playerEntity;
             UUID uuid = player.getUniqueID();
             try {
+                String requestFingerprint = PatternGenerationRequestGate.fingerprint(
+                    message.recipeMapId,
+                    message.outputOreDict,
+                    message.inputOreDict,
+                    message.ncItem,
+                    message.blacklistInput,
+                    message.blacklistOutput,
+                    message.replacements,
+                    message.targetTier);
+                if (!PatternGenerationRequestGate.shouldProcess(uuid, requestFingerprint, System.currentTimeMillis())) {
+                    return null;
+                }
+
                 // 检查仓储是否有残留样板
                 if (!PatternStorage.isEmpty(uuid)) {
                     PatternStorage.StorageSummary existing = PatternStorage.getSummary(uuid);
@@ -100,7 +111,11 @@ public class PacketGeneratePatterns implements IMessage {
                 // 1. 查找匹配的配方表
                 List<String> matchedMaps = GTRecipeSource.findMatchingRecipeMaps(message.recipeMapId);
                 if (matchedMaps.isEmpty()) {
-                    send(player, EnumChatFormatting.RED, "ae2patterngen.msg.generate.no_matching_map", message.recipeMapId);
+                    send(
+                        player,
+                        EnumChatFormatting.RED,
+                        "ae2patterngen.msg.generate.no_matching_map",
+                        message.recipeMapId);
                     return null;
                 }
 
@@ -115,31 +130,13 @@ public class PacketGeneratePatterns implements IMessage {
                 int totalBeforeFilter = recipes.size();
 
                 // 3. 构建过滤器
-                CompositeFilter filter = new CompositeFilter();
-                if (message.outputOreDict != null && !message.outputOreDict.isEmpty()
-                    && !message.outputOreDict.equals("*")) {
-                    filter.addFilter(new OutputOreDictFilter(message.outputOreDict));
-                }
-                if (message.inputOreDict != null && !message.inputOreDict.isEmpty()
-                    && !message.inputOreDict.equals("*")) {
-                    filter.addFilter(new InputOreDictFilter(message.inputOreDict));
-                }
-                if (message.ncItem != null && !message.ncItem.isEmpty() && !message.ncItem.equals("*")) {
-                    filter.addFilter(new NCItemFilter(message.ncItem));
-                }
-                if (message.blacklistInput != null && !message.blacklistInput.isEmpty()
-                    && !message.blacklistInput.equals("*")) {
-                    filter.addFilter(new BlacklistFilter(message.blacklistInput, true, false));
-                }
-                if (message.blacklistOutput != null && !message.blacklistOutput.isEmpty()
-                    && !message.blacklistOutput.equals("*")) {
-                    filter.addFilter(new BlacklistFilter(message.blacklistOutput, false, true));
-                }
-
-                // [新增] 电压等级过滤
-                if (message.targetTier >= 0) {
-                    filter.addFilter(new com.github.ae2patterngen.filter.TierFilter(message.targetTier));
-                }
+                CompositeFilter filter = RecipeFilterFactory.build(
+                    message.outputOreDict,
+                    message.inputOreDict,
+                    message.ncItem,
+                    message.blacklistInput,
+                    message.blacklistOutput,
+                    message.targetTier);
 
                 // 4. 应用过滤
                 List<RecipeEntry> filtered = new java.util.ArrayList<>();
@@ -189,7 +186,7 @@ public class PacketGeneratePatterns implements IMessage {
                 for (RecipeEntry re : filtered) {
                     String key = I18nUtil.tr("ae2patterngen.msg.common.unknown_item");
                     if (re.outputs != null && re.outputs.length > 0 && re.outputs[0] != null) {
-                        key = re.outputs[0].getDisplayName();
+                        key = ItemStackUtil.getSafeDisplayName(re.outputs[0]);
                     } else if (re.fluidOutputs != null && re.fluidOutputs.length > 0 && re.fluidOutputs[0] != null) {
                         key = re.fluidOutputs[0].getLocalizedName();
                     }
@@ -209,6 +206,18 @@ public class PacketGeneratePatterns implements IMessage {
                 }
 
                 if (!conflicts.isEmpty()) {
+                    if (ConflictSelectionPolicy.shouldAbortInteractiveSelection(filtered.size(), conflicts.size())) {
+                        send(
+                            player,
+                            EnumChatFormatting.RED,
+                            "ae2patterngen.msg.generate.conflicts_too_large",
+                            filtered.size(),
+                            conflicts.size(),
+                            ConflictSelectionPolicy.getMaxInteractiveFilteredRecipes(),
+                            ConflictSelectionPolicy.getMaxInteractiveConflictGroups());
+                        return null;
+                    }
+
                     // 开启冲突处理会话
                     ConflictSession.start(uuid, message.recipeMapId, nonConflicts, conflicts);
                     send(

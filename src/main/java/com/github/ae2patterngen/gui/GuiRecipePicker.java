@@ -14,6 +14,7 @@ import com.github.ae2patterngen.network.PacketRecipeConflicts;
 import com.github.ae2patterngen.network.PacketResolveConflictsBatch;
 import com.github.ae2patterngen.recipe.RecipeEntry;
 import com.github.ae2patterngen.util.I18nUtil;
+import com.github.ae2patterngen.util.ItemStackUtil;
 import com.gtnewhorizons.modularui.api.drawable.shapes.Rectangle;
 import com.gtnewhorizons.modularui.api.screen.ModularWindow;
 import com.gtnewhorizons.modularui.api.screen.UIBuildContext;
@@ -330,7 +331,7 @@ public class GuiRecipePicker {
         if (recipe.inputs != null) {
             for (ItemStack input : recipe.inputs) {
                 if (input == null) continue;
-                parts.add(safeText(input.getDisplayName()));
+                parts.add(safeText(ItemStackUtil.getSafeDisplayName(input)));
                 if (parts.size() >= maxParts) break;
             }
         }
@@ -422,7 +423,7 @@ public class GuiRecipePicker {
 
         for (ItemStack stack : stacks) {
             if (stack == null) continue;
-            String name = safeText(stack.getDisplayName());
+            String name = safeText(ItemStackUtil.getSafeDisplayName(stack));
             int amount = stack.stackSize;
             lines.add(
                 EnumChatFormatting.GRAY + " - " + EnumChatFormatting.WHITE + trimText(name, maxLen) + " x" + amount);
@@ -459,7 +460,7 @@ public class GuiRecipePicker {
         if (recipe.outputs != null) {
             for (ItemStack out : recipe.outputs) {
                 if (out != null) {
-                    return safeText(out.getDisplayName());
+                    return safeText(ItemStackUtil.getSafeDisplayName(out));
                 }
             }
         }
