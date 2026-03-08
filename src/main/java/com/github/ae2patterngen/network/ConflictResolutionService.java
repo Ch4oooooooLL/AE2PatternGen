@@ -5,14 +5,13 @@ import java.util.List;
 
 import net.minecraft.entity.player.EntityPlayerMP;
 
+import com.github.ae2patterngen.config.ForgeConfig;
 import com.github.ae2patterngen.recipe.RecipeEntry;
 
 /**
  * 冲突会话服务: 统一批次下发、最终结果收敛与生成触发。
  */
 public final class ConflictResolutionService {
-
-    public static final int BATCH_SIZE = 6;
 
     private ConflictResolutionService() {}
 
@@ -21,7 +20,8 @@ public final class ConflictResolutionService {
     }
 
     public static void sendCurrentBatch(EntityPlayerMP player, ConflictSession session) {
-        PacketRecipeConflictBatch batchPacket = PacketRecipeConflictBatch.fromSession(session, BATCH_SIZE);
+        PacketRecipeConflictBatch batchPacket = PacketRecipeConflictBatch
+            .fromSession(session, ForgeConfig.getConflictBatchSize());
         NetworkHandler.INSTANCE.sendTo(batchPacket, player);
     }
 

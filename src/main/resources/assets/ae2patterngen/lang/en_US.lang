@@ -144,6 +144,7 @@ ae2patterngen.msg.generate.filter_result=[AE2PatternGen] Raw recipes: %s, after 
 ae2patterngen.msg.generate.no_match_after_filter=[AE2PatternGen] No matching recipes found (check regex / ore dict).
 ae2patterngen.msg.generate.replacement_applied=[AE2PatternGen] Ore dictionary replacement rules applied.
 ae2patterngen.msg.generate.conflicts_detected=[AE2PatternGen] Detected %s conflict group(s). Please choose manually.
+ae2patterngen.msg.generate.internal_error=[AE2PatternGen] Internal filter error. Please check your filter input and retry.
 
 # Message - Conflict
 ae2patterngen.msg.conflict.cancelled=[AE2PatternGen] Conflict selection cancelled.

@@ -6,9 +6,9 @@ import java.util.regex.PatternSyntaxException;
 
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraftforge.oredict.OreDictionary;
 
 import com.github.ae2patterngen.recipe.RecipeEntry;
+import com.github.ae2patterngen.util.OreDictUtil;
 
 /**
  * 黑名单过滤器 — 如果配方包含匹配项，则拒绝
@@ -117,12 +117,7 @@ public class BlacklistFilter implements IRecipeFilter {
     }
 
     private static String[] getOreNames(ItemStack stack) {
-        int[] oreIds = OreDictionary.getOreIDs(stack);
-        String[] names = new String[oreIds.length];
-        for (int i = 0; i < oreIds.length; i++) {
-            names[i] = OreDictionary.getOreName(oreIds[i]);
-        }
-        return names;
+        return OreDictUtil.getOreNamesSafe(stack);
     }
 
     private static void appendPart(StringBuilder builder, String value) {

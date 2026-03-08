@@ -7,6 +7,8 @@ import java.util.Map;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.oredict.OreDictionary;
 
+import com.github.ae2patterngen.util.OreDictUtil;
+
 /**
  * 矿辞替换器 — 在编码前替换 ItemStack 中的物品
  * <p>
@@ -64,12 +66,11 @@ public class OreDictReplacer {
     private ItemStack tryReplace(ItemStack original) {
         if (original == null) return null;
 
-        // 获取此物品注册的所有矿辞名
-        int[] oreIds = OreDictionary.getOreIDs(original);
-        if (oreIds.length == 0) return original;
+        // 获取此物品注册的所有矿辞名（带越界保护）
+        String[] oreNames = OreDictUtil.getOreNamesSafe(original);
+        if (oreNames.length == 0) return original;
 
-        for (int oreId : oreIds) {
-            String oreName = OreDictionary.getOreName(oreId);
+        for (String oreName : oreNames) {
             if (rules.containsKey(oreName)) {
                 String targetOre = rules.get(oreName);
                 List<ItemStack> candidates = OreDictionary.getOres(targetOre);

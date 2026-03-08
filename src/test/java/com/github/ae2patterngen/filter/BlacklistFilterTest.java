@@ -42,4 +42,12 @@ public class BlacklistFilterTest {
         assertTrue(BlacklistFilter.matchesCompiledPattern(pattern, "ingotB", 1, 0, new String[] { "oreAny" }));
         assertFalse(BlacklistFilter.matchesCompiledPattern(pattern, "ingotC", 1, 0, new String[] { "oreAny" }));
     }
+
+    @Test
+    public void explicitIdMetaTokenLike7193_0MatchesExactly() {
+        Pattern pattern = BlacklistFilter.compileKeyword("[7193:0]");
+
+        assertTrue(BlacklistFilter.matchesCompiledPattern(pattern, "Any Item", 7193, 0, new String[] { "oreAny" }));
+        assertFalse(BlacklistFilter.matchesCompiledPattern(pattern, "Any Item", 7193, 1, new String[] { "oreAny" }));
+    }
 }

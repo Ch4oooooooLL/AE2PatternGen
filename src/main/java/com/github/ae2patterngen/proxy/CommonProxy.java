@@ -4,6 +4,7 @@ import java.util.List;
 
 import net.minecraft.entity.player.EntityPlayer;
 
+import com.github.ae2patterngen.config.ForgeConfig;
 import com.github.ae2patterngen.item.ModItems;
 import com.github.ae2patterngen.network.NetworkHandler;
 
@@ -13,6 +14,7 @@ import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 public class CommonProxy {
 
     public void preInit(FMLPreInitializationEvent event) {
+        ForgeConfig.load(event.getSuggestedConfigurationFile());
         ModItems.init();
         NetworkHandler.init();
     }

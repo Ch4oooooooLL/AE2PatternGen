@@ -4,9 +4,9 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 import net.minecraft.item.ItemStack;
-import net.minecraftforge.oredict.OreDictionary;
 
 import com.github.ae2patterngen.recipe.RecipeEntry;
+import com.github.ae2patterngen.util.OreDictUtil;
 
 /**
  * 按输入物品的矿辞名过滤，支持正则表达式
@@ -36,9 +36,8 @@ public class InputOreDictFilter implements IRecipeFilter {
         for (ItemStack input : recipe.inputs) {
             if (input == null) continue;
 
-            int[] oreIds = OreDictionary.getOreIDs(input);
-            for (int oreId : oreIds) {
-                String oreName = OreDictionary.getOreName(oreId);
+            String[] oreNames = OreDictUtil.getOreNamesSafe(input);
+            for (String oreName : oreNames) {
                 if (compiledPattern.matcher(oreName)
                     .find()) {
                     return true;
