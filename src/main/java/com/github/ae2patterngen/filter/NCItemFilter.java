@@ -13,8 +13,12 @@ public class NCItemFilter implements IRecipeFilter {
     private final ExplicitStackMatcher matcher;
 
     public NCItemFilter(String matchSource) {
+        this(matchSource, new ExplicitStackMatcher.StackMatchCache());
+    }
+
+    NCItemFilter(String matchSource, ExplicitStackMatcher.StackMatchCache stackMatchCache) {
         this.matchSource = matchSource;
-        this.matcher = new ExplicitStackMatcher(matchSource);
+        this.matcher = new ExplicitStackMatcher(matchSource, stackMatchCache);
     }
 
     @Override

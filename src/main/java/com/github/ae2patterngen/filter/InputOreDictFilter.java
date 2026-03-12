@@ -13,8 +13,12 @@ public class InputOreDictFilter implements IRecipeFilter {
     private final ExplicitStackMatcher matcher;
 
     public InputOreDictFilter(String matchSource) {
+        this(matchSource, new ExplicitStackMatcher.StackMatchCache());
+    }
+
+    InputOreDictFilter(String matchSource, ExplicitStackMatcher.StackMatchCache stackMatchCache) {
         this.matchSource = matchSource;
-        this.matcher = new ExplicitStackMatcher(matchSource);
+        this.matcher = new ExplicitStackMatcher(matchSource, stackMatchCache);
     }
 
     @Override

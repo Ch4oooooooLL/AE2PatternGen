@@ -15,10 +15,15 @@ public class BlacklistFilter implements IRecipeFilter {
     private final ExplicitStackMatcher matcher;
 
     public BlacklistFilter(String keyword, boolean checkInputs, boolean checkOutputs) {
+        this(keyword, checkInputs, checkOutputs, new ExplicitStackMatcher.StackMatchCache());
+    }
+
+    BlacklistFilter(String keyword, boolean checkInputs, boolean checkOutputs,
+        ExplicitStackMatcher.StackMatchCache stackMatchCache) {
         this.keyword = keyword;
         this.checkInputs = checkInputs;
         this.checkOutputs = checkOutputs;
-        this.matcher = new ExplicitStackMatcher(keyword);
+        this.matcher = new ExplicitStackMatcher(keyword, stackMatchCache);
     }
 
     @Override

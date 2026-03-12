@@ -10,24 +10,26 @@ public final class RecipeFilterFactory {
     public static CompositeFilter build(String outputOreDict, String inputOreDict, String ncItem, String blacklistInput,
         String blacklistOutput, int targetTier) {
         CompositeFilter filter = new CompositeFilter();
+        ExplicitStackMatcher.StackMatchCache stackMatchCache = new ExplicitStackMatcher.StackMatchCache();
 
-        if (isEnabled(outputOreDict)) {
-            filter.addFilter(new OutputOreDictFilter(outputOreDict));
-        }
-        if (isEnabled(inputOreDict)) {
-            filter.addFilter(new InputOreDictFilter(inputOreDict));
-        }
-        if (isEnabled(ncItem)) {
-            filter.addFilter(new NCItemFilter(ncItem));
-        }
-        if (isEnabled(blacklistInput)) {
-            filter.addFilter(new BlacklistFilter(blacklistInput, true, false));
-        }
-        if (isEnabled(blacklistOutput)) {
-            filter.addFilter(new BlacklistFilter(blacklistOutput, false, true));
-        }
         if (targetTier >= 0) {
             filter.addFilter(new TierFilter(targetTier));
+        }
+
+        if (isEnabled(outputOreDict)) {
+            filter.addFilter(new OutputOreDictFilter(outputOreDict, stackMatchCache));
+        }
+        if (isEnabled(inputOreDict)) {
+            filter.addFilter(new InputOreDictFilter(inputOreDict, stackMatchCache));
+        }
+        if (isEnabled(ncItem)) {
+            filter.addFilter(new NCItemFilter(ncItem, stackMatchCache));
+        }
+        if (isEnabled(blacklistInput)) {
+            filter.addFilter(new BlacklistFilter(blacklistInput, true, false, stackMatchCache));
+        }
+        if (isEnabled(blacklistOutput)) {
+            filter.addFilter(new BlacklistFilter(blacklistOutput, false, true, stackMatchCache));
         }
 
         return filter;

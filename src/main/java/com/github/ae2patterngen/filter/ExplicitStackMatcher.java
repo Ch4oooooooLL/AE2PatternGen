@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
@@ -32,24 +33,29 @@ public class ExplicitStackMatcher {
     private final String source;
     private final boolean disabled;
     private final boolean invalid;
-    private final ParsedRules parsedRules;
-    private final IdentityHashMap<ItemStack, StackMatchData> stackCache = new IdentityHashMap<ItemStack, StackMatchData>();
+    private final MatchPlan matchPlan;
+    private final StackMatchCache stackCache;
 
     public ExplicitStackMatcher(String source) {
+        this(source, new StackMatchCache());
+    }
+
+    ExplicitStackMatcher(String source, StackMatchCache stackCache) {
         this.source = source;
+        this.stackCache = stackCache != null ? stackCache : new StackMatchCache();
 
         String normalized = source != null ? source.trim() : "";
         if (normalized.isEmpty() || "*".equals(normalized)) {
             this.disabled = true;
             this.invalid = false;
-            this.parsedRules = ParsedRules.empty();
+            this.matchPlan = MatchPlan.NO_RULES;
             return;
         }
 
         ParsedRules rules = parseRules(normalized);
         this.disabled = false;
         this.invalid = !rules.hasRules();
-        this.parsedRules = rules;
+        this.matchPlan = this.invalid ? MatchPlan.NO_RULES : rules.toMatchPlan();
     }
 
     public boolean isDisabled() {
@@ -65,13 +71,21 @@ public class ExplicitStackMatcher {
             return false;
         }
 
-        StackMatchData data = stackCache.get(stack);
-        if (data == null) {
-            data = new StackMatchData(stack);
-            stackCache.put(stack, data);
+        Item item = stack.getItem();
+        if (item == null) {
+            return false;
         }
 
-        return parsedRules.matches(data);
+        final int itemId = Item.getIdFromItem(item);
+        final int meta = stack.getItemDamage();
+
+        return matches(
+            itemId,
+            meta,
+            () -> stackCache.getOrCreate(stack)
+                .getOreNames(),
+            () -> stackCache.getOrCreate(stack)
+                .getDisplayName());
     }
 
     boolean matches(String displayName, int itemId, int meta, String[] oreNames) {
@@ -79,7 +93,14 @@ public class ExplicitStackMatcher {
             return false;
         }
 
-        return parsedRules.matches(new RawMatchData(displayName, itemId, meta, oreNames));
+        return matches(itemId, meta, () -> oreNames, () -> displayName);
+    }
+
+    boolean matches(int itemId, int meta, Supplier<String[]> oreNamesSupplier, Supplier<String> displayNameSupplier) {
+        if (disabled || invalid) {
+            return false;
+        }
+        return matchPlan.matches(itemId, meta, oreNamesSupplier, displayNameSupplier);
     }
 
     String getSource() {
@@ -226,53 +247,21 @@ public class ExplicitStackMatcher {
         return ParseResult.invalid();
     }
 
-    private interface MatchData {
+    static final class StackMatchCache {
 
-        int getItemId();
+        private final IdentityHashMap<ItemStack, StackMatchData> stackCache = new IdentityHashMap<ItemStack, StackMatchData>();
 
-        int getMeta();
-
-        String[] getOreNames();
-
-        String getDisplayName();
-    }
-
-    private static final class RawMatchData implements MatchData {
-
-        private final String displayName;
-        private final int itemId;
-        private final int meta;
-        private final String[] oreNames;
-
-        private RawMatchData(String displayName, int itemId, int meta, String[] oreNames) {
-            this.displayName = displayName != null ? displayName : "";
-            this.itemId = itemId;
-            this.meta = meta;
-            this.oreNames = oreNames != null ? oreNames : EMPTY_STRINGS;
-        }
-
-        @Override
-        public int getItemId() {
-            return itemId;
-        }
-
-        @Override
-        public int getMeta() {
-            return meta;
-        }
-
-        @Override
-        public String[] getOreNames() {
-            return oreNames;
-        }
-
-        @Override
-        public String getDisplayName() {
-            return displayName;
+        private StackMatchData getOrCreate(ItemStack stack) {
+            StackMatchData data = stackCache.get(stack);
+            if (data == null) {
+                data = new StackMatchData(stack);
+                stackCache.put(stack, data);
+            }
+            return data;
         }
     }
 
-    private static final class StackMatchData implements MatchData {
+    private static final class StackMatchData {
 
         private final ItemStack stack;
         private final int itemId;
@@ -295,17 +284,14 @@ public class ExplicitStackMatcher {
             }
         }
 
-        @Override
         public int getItemId() {
             return itemId;
         }
 
-        @Override
         public int getMeta() {
             return meta;
         }
 
-        @Override
         public String[] getOreNames() {
             if (!oreNamesLoaded) {
                 oreNames = OreDictUtil.getOreNamesSafe(stack);
@@ -314,7 +300,6 @@ public class ExplicitStackMatcher {
             return oreNames != null ? oreNames : EMPTY_STRINGS;
         }
 
-        @Override
         public String getDisplayName() {
             if (!displayNameLoaded) {
                 displayName = ItemStackUtil.getSafeDisplayName(stack);
@@ -349,38 +334,21 @@ public class ExplicitStackMatcher {
             return !(idRules.isEmpty() && oreDictRules.isEmpty() && displayNameRules.isEmpty());
         }
 
-        private boolean matches(MatchData data) {
-            if (data == null || !hasRules()) {
-                return false;
-            }
+        private MatchPlan toMatchPlan() {
+            boolean hasId = !idRules.isEmpty();
+            boolean hasOre = !oreDictRules.isEmpty();
+            boolean hasDisplay = !displayNameRules.isEmpty();
 
-            int itemId = data.getItemId();
-            int meta = data.getMeta();
-            for (IdRule rule : idRules) {
-                if (rule.matches(itemId, meta)) {
-                    return true;
-                }
+            if (hasId && !hasOre && !hasDisplay) {
+                return new IdOnlyMatchPlan(idRules);
             }
-
-            if (!oreDictRules.isEmpty()) {
-                String[] oreNames = data.getOreNames();
-                for (RegexRule rule : oreDictRules) {
-                    if (rule.matchesAny(oreNames)) {
-                        return true;
-                    }
-                }
+            if (!hasId && hasOre && !hasDisplay) {
+                return new OreOnlyMatchPlan(oreDictRules);
             }
-
-            if (!displayNameRules.isEmpty()) {
-                String displayName = data.getDisplayName();
-                for (RegexRule rule : displayNameRules) {
-                    if (rule.matches(displayName)) {
-                        return true;
-                    }
-                }
+            if (!hasId && !hasOre && hasDisplay) {
+                return new DisplayOnlyMatchPlan(displayNameRules);
             }
-
-            return false;
+            return new MixedMatchPlan(idRules, oreDictRules, displayNameRules);
         }
     }
 
@@ -428,6 +396,147 @@ public class ExplicitStackMatcher {
                     return true;
                 }
             }
+            return false;
+        }
+    }
+
+    private interface MatchPlan {
+
+        MatchPlan NO_RULES = new MatchPlan() {
+
+            @Override
+            public boolean matches(int itemId, int meta, Supplier<String[]> oreNamesSupplier,
+                Supplier<String> displayNameSupplier) {
+                return false;
+            }
+        };
+
+        boolean matches(int itemId, int meta, Supplier<String[]> oreNamesSupplier,
+            Supplier<String> displayNameSupplier);
+    }
+
+    private abstract static class BaseMatchPlan implements MatchPlan {
+
+        protected String[] getOreNames(Supplier<String[]> oreNamesSupplier) {
+            if (oreNamesSupplier == null) {
+                return EMPTY_STRINGS;
+            }
+
+            String[] oreNames = oreNamesSupplier.get();
+            return oreNames != null ? oreNames : EMPTY_STRINGS;
+        }
+
+        protected String getDisplayName(Supplier<String> displayNameSupplier) {
+            if (displayNameSupplier == null) {
+                return "";
+            }
+
+            String displayName = displayNameSupplier.get();
+            return displayName != null ? displayName : "";
+        }
+    }
+
+    private static final class IdOnlyMatchPlan extends BaseMatchPlan {
+
+        private final List<IdRule> idRules;
+
+        private IdOnlyMatchPlan(List<IdRule> idRules) {
+            this.idRules = idRules;
+        }
+
+        @Override
+        public boolean matches(int itemId, int meta, Supplier<String[]> oreNamesSupplier,
+            Supplier<String> displayNameSupplier) {
+            for (IdRule rule : idRules) {
+                if (rule.matches(itemId, meta)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
+    private static final class OreOnlyMatchPlan extends BaseMatchPlan {
+
+        private final List<RegexRule> oreDictRules;
+
+        private OreOnlyMatchPlan(List<RegexRule> oreDictRules) {
+            this.oreDictRules = oreDictRules;
+        }
+
+        @Override
+        public boolean matches(int itemId, int meta, Supplier<String[]> oreNamesSupplier,
+            Supplier<String> displayNameSupplier) {
+            String[] oreNames = getOreNames(oreNamesSupplier);
+            for (RegexRule rule : oreDictRules) {
+                if (rule.matchesAny(oreNames)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
+    private static final class DisplayOnlyMatchPlan extends BaseMatchPlan {
+
+        private final List<RegexRule> displayNameRules;
+
+        private DisplayOnlyMatchPlan(List<RegexRule> displayNameRules) {
+            this.displayNameRules = displayNameRules;
+        }
+
+        @Override
+        public boolean matches(int itemId, int meta, Supplier<String[]> oreNamesSupplier,
+            Supplier<String> displayNameSupplier) {
+            String displayName = getDisplayName(displayNameSupplier);
+            for (RegexRule rule : displayNameRules) {
+                if (rule.matches(displayName)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
+    private static final class MixedMatchPlan extends BaseMatchPlan {
+
+        private final List<IdRule> idRules;
+        private final List<RegexRule> oreDictRules;
+        private final List<RegexRule> displayNameRules;
+
+        private MixedMatchPlan(List<IdRule> idRules, List<RegexRule> oreDictRules, List<RegexRule> displayNameRules) {
+            this.idRules = idRules;
+            this.oreDictRules = oreDictRules;
+            this.displayNameRules = displayNameRules;
+        }
+
+        @Override
+        public boolean matches(int itemId, int meta, Supplier<String[]> oreNamesSupplier,
+            Supplier<String> displayNameSupplier) {
+            for (IdRule rule : idRules) {
+                if (rule.matches(itemId, meta)) {
+                    return true;
+                }
+            }
+
+            if (!oreDictRules.isEmpty()) {
+                String[] oreNames = getOreNames(oreNamesSupplier);
+                for (RegexRule rule : oreDictRules) {
+                    if (rule.matchesAny(oreNames)) {
+                        return true;
+                    }
+                }
+            }
+
+            if (!displayNameRules.isEmpty()) {
+                String displayName = getDisplayName(displayNameSupplier);
+                for (RegexRule rule : displayNameRules) {
+                    if (rule.matches(displayName)) {
+                        return true;
+                    }
+                }
+            }
+
             return false;
         }
     }

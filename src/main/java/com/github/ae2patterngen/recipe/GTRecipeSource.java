@@ -2,6 +2,7 @@ package com.github.ae2patterngen.recipe;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -22,6 +23,8 @@ import gregtech.api.util.GTRecipe;
  * 支持模糊匹配: 输入 "blender" 可匹配 "gt.recipe.metablender"
  */
 public class GTRecipeSource {
+
+    private static final RecipeCollectionCache<String, List<RecipeEntry>> COLLECTED_RECIPE_CACHE = new RecipeCollectionCache<String, List<RecipeEntry>>();
 
     /**
      * 获取所有已注册的 GT 配方表名称
@@ -104,13 +107,19 @@ public class GTRecipeSource {
      * @return 所有匹配配方表的 RecipeEntry 列表
      */
     public static List<RecipeEntry> collectRecipes(String keyword) {
-        List<RecipeEntry> entries = new ArrayList<>();
-        Set<String> processedKeys = new java.util.HashSet<>();
-
         List<String> matchedMaps = findMatchingRecipeMaps(keyword);
         if (matchedMaps.isEmpty()) {
-            return entries;
+            return new ArrayList<>();
         }
+
+        String cacheKey = buildCollectionCacheKey(matchedMaps);
+        return COLLECTED_RECIPE_CACHE
+            .getOrCompute(cacheKey, () -> Collections.unmodifiableList(collectRecipesForMatchedMaps(matchedMaps)));
+    }
+
+    private static List<RecipeEntry> collectRecipesForMatchedMaps(List<String> matchedMaps) {
+        List<RecipeEntry> entries = new ArrayList<>();
+        Set<String> processedKeys = new java.util.HashSet<>();
 
         for (String mapId : matchedMaps) {
             RecipeMap<?> targetMap = RecipeMap.ALL_RECIPE_MAPS.get(mapId);
@@ -153,6 +162,13 @@ public class GTRecipeSource {
         }
 
         return entries;
+    }
+
+    private static String buildCollectionCacheKey(List<String> matchedMaps) {
+        if (matchedMaps == null || matchedMaps.isEmpty()) {
+            return "";
+        }
+        return String.join("\u001F", matchedMaps);
     }
 
     /**
