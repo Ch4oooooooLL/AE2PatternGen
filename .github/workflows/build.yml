@@ -45,6 +45,9 @@ jobs:
       contents: write
 
     steps:
+      - name: Checkout release notes
+        uses: actions/checkout@v4
+
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
@@ -54,6 +57,7 @@ jobs:
       - name: Create stable release
         uses: softprops/action-gh-release@v2
         with:
+          body_path: docs/releases/${{ github.ref_name }}.md
           files: |
             build/libs/*[!s].jar
           generate_release_notes: true
