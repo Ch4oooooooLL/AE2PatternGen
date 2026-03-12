@@ -26,7 +26,8 @@ class FilterTextFieldWidget extends TextFieldWidget implements IDragAndDropHandl
         }
 
         String formatted = stackFormatter.apply(draggedStack);
-        if (formatted == null || formatted.trim().isEmpty()) {
+        if (formatted == null || formatted.trim()
+            .isEmpty()) {
             return false;
         }
 

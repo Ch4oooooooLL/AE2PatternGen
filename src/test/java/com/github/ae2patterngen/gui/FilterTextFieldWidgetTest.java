@@ -70,7 +70,8 @@ public class FilterTextFieldWidgetTest {
 
     private boolean invokeHandleDragAndDrop(Object widget, ItemStack stack, int button) {
         try {
-            Method method = widget.getClass().getMethod("handleDragAndDrop", ItemStack.class, int.class);
+            Method method = widget.getClass()
+                .getMethod("handleDragAndDrop", ItemStack.class, int.class);
             return ((Boolean) method.invoke(widget, stack, button)).booleanValue();
         } catch (NoSuchMethodException e) {
             fail("Expected FilterTextFieldWidget.handleDragAndDrop(ItemStack, int)");
@@ -85,7 +86,8 @@ public class FilterTextFieldWidgetTest {
 
     private void invokeSetText(Object widget, String text) {
         try {
-            Method method = widget.getClass().getMethod("setText", String.class);
+            Method method = widget.getClass()
+                .getMethod("setText", String.class);
             method.invoke(widget, text);
         } catch (NoSuchMethodException e) {
             fail("Expected TextFieldWidget.setText(String)");
@@ -99,7 +101,8 @@ public class FilterTextFieldWidgetTest {
 
     private String invokeGetText(Object widget) {
         try {
-            Method method = widget.getClass().getMethod("getText");
+            Method method = widget.getClass()
+                .getMethod("getText");
             return (String) method.invoke(widget);
         } catch (NoSuchMethodException e) {
             fail("Expected TextFieldWidget.getText()");
