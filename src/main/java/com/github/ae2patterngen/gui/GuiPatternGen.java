@@ -73,7 +73,7 @@ public class GuiPatternGen {
         labelOutOre.setPos(6, refY + 14 + 3);
         scrollable.widget(labelOutOre);
 
-        TextFieldWidget tfOutputOre = new TextFieldWidget();
+        TextFieldWidget tfOutputOre = new FilterTextFieldWidget();
         tfOutputOre.setText(ItemPatternGenerator.getSavedField(held, ItemPatternGenerator.NBT_OUTPUT_ORE));
         tfOutputOre.setPos(inputX, refY + 14);
         tfOutputOre.setSize(fieldW, 14);
@@ -86,7 +86,7 @@ public class GuiPatternGen {
         labelInOre.setPos(6, refY + 32 + 3);
         scrollable.widget(labelInOre);
 
-        TextFieldWidget tfInputOre = new TextFieldWidget();
+        TextFieldWidget tfInputOre = new FilterTextFieldWidget();
         tfInputOre.setText(ItemPatternGenerator.getSavedField(held, ItemPatternGenerator.NBT_INPUT_ORE));
         tfInputOre.setPos(inputX, refY + 32);
         tfInputOre.setSize(fieldW, 14);
@@ -99,7 +99,7 @@ public class GuiPatternGen {
         labelNC.setPos(6, refY + 50 + 3);
         scrollable.widget(labelNC);
 
-        TextFieldWidget tfNCItem = new TextFieldWidget();
+        TextFieldWidget tfNCItem = new FilterTextFieldWidget();
         tfNCItem.setText(ItemPatternGenerator.getSavedField(held, ItemPatternGenerator.NBT_NC_ITEM));
         tfNCItem.setPos(inputX, refY + 50);
         tfNCItem.setSize(fieldW, 14);
@@ -163,7 +163,7 @@ public class GuiPatternGen {
         labelBLIn.setPos(6, refY + 14 + 3);
         scrollable.widget(labelBLIn);
 
-        TextFieldWidget tfBlacklistIn = new TextFieldWidget();
+        TextFieldWidget tfBlacklistIn = new FilterTextFieldWidget();
         tfBlacklistIn.setText(ItemPatternGenerator.getSavedField(held, ItemPatternGenerator.NBT_BLACKLIST_INPUT));
         tfBlacklistIn.setPos(inputX, refY + 14);
         tfBlacklistIn.setSize(fieldW, 14);
@@ -176,7 +176,7 @@ public class GuiPatternGen {
         labelBLOut.setPos(6, refY + 32 + 3);
         scrollable.widget(labelBLOut);
 
-        TextFieldWidget tfBlacklistOut = new TextFieldWidget();
+        TextFieldWidget tfBlacklistOut = new FilterTextFieldWidget();
         tfBlacklistOut.setText(ItemPatternGenerator.getSavedField(held, ItemPatternGenerator.NBT_BLACKLIST_OUTPUT));
         tfBlacklistOut.setPos(inputX, refY + 32);
         tfBlacklistOut.setSize(fieldW, 14);
