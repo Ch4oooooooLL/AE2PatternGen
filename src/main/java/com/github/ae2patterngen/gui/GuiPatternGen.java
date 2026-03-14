@@ -15,6 +15,8 @@ import com.github.ae2patterngen.network.PacketSaveFields;
 import com.github.ae2patterngen.recipe.GTRecipeSource;
 import com.github.ae2patterngen.recipe.RecipeEntry;
 import com.github.ae2patterngen.util.I18nUtil;
+import com.gtnewhorizons.modularui.api.drawable.IDrawable;
+import com.gtnewhorizons.modularui.api.drawable.Text;
 import com.gtnewhorizons.modularui.api.drawable.shapes.Rectangle;
 import com.gtnewhorizons.modularui.api.screen.ModularWindow;
 import com.gtnewhorizons.modularui.api.screen.UIBuildContext;
@@ -27,6 +29,8 @@ public class GuiPatternGen {
 
     private static final int GUI_W = 260;
     private static final int GUI_H = 315;
+    private static final int DRAG_SELECTOR_W = 36;
+    private static final int DRAG_SELECTOR_BG = 0xEE2A2A42;
 
     public static ModularWindow createWindow(UIBuildContext buildContext, ItemStack held) {
         ModularWindow.Builder builder = ModularWindow.builder(GUI_W, GUI_H);
@@ -73,7 +77,7 @@ public class GuiPatternGen {
         labelOutOre.setPos(6, refY + 14 + 3);
         scrollable.widget(labelOutOre);
 
-        TextFieldWidget tfOutputOre = new FilterTextFieldWidget();
+        FilterTextFieldWidget tfOutputOre = new FilterTextFieldWidget();
         tfOutputOre.setText(ItemPatternGenerator.getSavedField(held, ItemPatternGenerator.NBT_OUTPUT_ORE));
         tfOutputOre.setPos(inputX, refY + 14);
         tfOutputOre.setSize(fieldW, 14);
@@ -81,12 +85,13 @@ public class GuiPatternGen {
         tfOutputOre.setBackground(new Rectangle().setColor(0xFF1E1E30));
         tfOutputOre.setTextAlignment(com.gtnewhorizons.modularui.api.math.Alignment.CenterLeft);
         scrollable.widget(tfOutputOre);
+        attachDragChoiceSelector(scrollable, tfOutputOre, inputX, refY + 14, fieldW);
 
         TextWidget labelInOre = new TextWidget(I18nUtil.tr("ae2patterngen.gui.pattern_gen.label.input_ore"));
         labelInOre.setPos(6, refY + 32 + 3);
         scrollable.widget(labelInOre);
 
-        TextFieldWidget tfInputOre = new FilterTextFieldWidget();
+        FilterTextFieldWidget tfInputOre = new FilterTextFieldWidget();
         tfInputOre.setText(ItemPatternGenerator.getSavedField(held, ItemPatternGenerator.NBT_INPUT_ORE));
         tfInputOre.setPos(inputX, refY + 32);
         tfInputOre.setSize(fieldW, 14);
@@ -94,12 +99,13 @@ public class GuiPatternGen {
         tfInputOre.setBackground(new Rectangle().setColor(0xFF1E1E30));
         tfInputOre.setTextAlignment(com.gtnewhorizons.modularui.api.math.Alignment.CenterLeft);
         scrollable.widget(tfInputOre);
+        attachDragChoiceSelector(scrollable, tfInputOre, inputX, refY + 32, fieldW);
 
         TextWidget labelNC = new TextWidget(I18nUtil.tr("ae2patterngen.gui.pattern_gen.label.nc_item"));
         labelNC.setPos(6, refY + 50 + 3);
         scrollable.widget(labelNC);
 
-        TextFieldWidget tfNCItem = new FilterTextFieldWidget();
+        FilterTextFieldWidget tfNCItem = new FilterTextFieldWidget();
         tfNCItem.setText(ItemPatternGenerator.getSavedField(held, ItemPatternGenerator.NBT_NC_ITEM));
         tfNCItem.setPos(inputX, refY + 50);
         tfNCItem.setSize(fieldW, 14);
@@ -107,6 +113,7 @@ public class GuiPatternGen {
         tfNCItem.setBackground(new Rectangle().setColor(0xFF1E1E30));
         tfNCItem.setTextAlignment(com.gtnewhorizons.modularui.api.math.Alignment.CenterLeft);
         scrollable.widget(tfNCItem);
+        attachDragChoiceSelector(scrollable, tfNCItem, inputX, refY + 50, fieldW);
 
         TextWidget labelTier = new TextWidget(I18nUtil.tr("ae2patterngen.gui.pattern_gen.label.tier"));
         labelTier.setPos(6, refY + 68 + 3);
@@ -163,7 +170,7 @@ public class GuiPatternGen {
         labelBLIn.setPos(6, refY + 14 + 3);
         scrollable.widget(labelBLIn);
 
-        TextFieldWidget tfBlacklistIn = new FilterTextFieldWidget();
+        FilterTextFieldWidget tfBlacklistIn = new FilterTextFieldWidget();
         tfBlacklistIn.setText(ItemPatternGenerator.getSavedField(held, ItemPatternGenerator.NBT_BLACKLIST_INPUT));
         tfBlacklistIn.setPos(inputX, refY + 14);
         tfBlacklistIn.setSize(fieldW, 14);
@@ -171,12 +178,13 @@ public class GuiPatternGen {
         tfBlacklistIn.setBackground(new Rectangle().setColor(0xFF1E1E30));
         tfBlacklistIn.setTextAlignment(com.gtnewhorizons.modularui.api.math.Alignment.CenterLeft);
         scrollable.widget(tfBlacklistIn);
+        attachDragChoiceSelector(scrollable, tfBlacklistIn, inputX, refY + 14, fieldW);
 
         TextWidget labelBLOut = new TextWidget(I18nUtil.tr("ae2patterngen.gui.pattern_gen.label.blacklist_output"));
         labelBLOut.setPos(6, refY + 32 + 3);
         scrollable.widget(labelBLOut);
 
-        TextFieldWidget tfBlacklistOut = new FilterTextFieldWidget();
+        FilterTextFieldWidget tfBlacklistOut = new FilterTextFieldWidget();
         tfBlacklistOut.setText(ItemPatternGenerator.getSavedField(held, ItemPatternGenerator.NBT_BLACKLIST_OUTPUT));
         tfBlacklistOut.setPos(inputX, refY + 32);
         tfBlacklistOut.setSize(fieldW, 14);
@@ -184,6 +192,7 @@ public class GuiPatternGen {
         tfBlacklistOut.setBackground(new Rectangle().setColor(0xFF1E1E30));
         tfBlacklistOut.setTextAlignment(com.gtnewhorizons.modularui.api.math.Alignment.CenterLeft);
         scrollable.widget(tfBlacklistOut);
+        attachDragChoiceSelector(scrollable, tfBlacklistOut, inputX, refY + 32, fieldW);
 
         TextWidget regexHint = new TextWidget(
             EnumChatFormatting.DARK_GRAY + I18nUtil.tr("ae2patterngen.gui.pattern_gen.hint.regex"));
@@ -344,5 +353,87 @@ public class GuiPatternGen {
         buildContext.addCloseListener(saveFunction);
 
         return builder.build();
+    }
+
+    private static void attachDragChoiceSelector(Scrollable scrollable, FilterTextFieldWidget field, int fieldX,
+        int fieldY, int fieldWidth) {
+        final ExplicitFilterDropFormatter.DropChoices[] currentChoices = new ExplicitFilterDropFormatter.DropChoices[] {
+            ExplicitFilterDropFormatter.DropChoices.empty() };
+        final int[] currentIndex = new int[] { -1 };
+
+        FilterDragChoiceButtonWidget selector = new FilterDragChoiceButtonWidget(field);
+        selector.setSynced(false, false);
+        selector.setPos(fieldX + fieldWidth - DRAG_SELECTOR_W, fieldY);
+        selector.setSize(DRAG_SELECTOR_W, 14);
+        selector.setEnabled(widget -> hasAlternativeChoices(currentChoices[0]));
+        selector.setBackground(() -> buildSelectorBackground(currentChoices[0], currentIndex[0]));
+        selector.addTooltip(I18nUtil.tr("ae2patterngen.gui.pattern_gen.drag_choice.tooltip.line1"));
+        selector.addTooltip(I18nUtil.tr("ae2patterngen.gui.pattern_gen.drag_choice.tooltip.line2"));
+        selector.setOnClick((clickData, widget) -> {
+            if (!hasAlternativeChoices(currentChoices[0])) {
+                return;
+            }
+
+            int direction = clickData.mouseButton == 1 ? -1 : 1;
+            currentIndex[0] = cycleIndex(currentIndex[0], currentChoices[0].size(), direction);
+            field.applyDropChoice(
+                currentChoices[0].getOptions()
+                    .get(currentIndex[0]));
+        });
+        scrollable.widget(selector);
+
+        field.setDropChoicesListener(choices -> {
+            currentChoices[0] = choices != null ? choices : ExplicitFilterDropFormatter.DropChoices.empty();
+            currentIndex[0] = currentChoices[0].getDefaultIndex();
+        });
+    }
+
+    private static boolean hasAlternativeChoices(ExplicitFilterDropFormatter.DropChoices choices) {
+        return choices != null && choices.size() > 1;
+    }
+
+    private static int cycleIndex(int currentIndex, int size, int direction) {
+        if (size <= 0) {
+            return -1;
+        }
+
+        int safeCurrent = currentIndex >= 0 ? currentIndex : 0;
+        int next = (safeCurrent + direction) % size;
+        return next < 0 ? next + size : next;
+    }
+
+    private static IDrawable[] buildSelectorBackground(ExplicitFilterDropFormatter.DropChoices choices,
+        int currentIndex) {
+        return new IDrawable[] { new Rectangle().setColor(DRAG_SELECTOR_BG),
+            new Text(resolveChoiceLabel(choices, currentIndex)).color(0xFFFFFF)
+                .alignment(com.gtnewhorizons.modularui.api.math.Alignment.Center) };
+    }
+
+    private static String resolveChoiceLabel(ExplicitFilterDropFormatter.DropChoices choices, int currentIndex) {
+        if (choices == null || choices.isEmpty()) {
+            return "";
+        }
+
+        int safeIndex = currentIndex;
+        if (safeIndex < 0 || safeIndex >= choices.size()) {
+            safeIndex = choices.getDefaultIndex();
+        }
+        if (safeIndex < 0 || safeIndex >= choices.size()) {
+            return "";
+        }
+
+        ExplicitFilterDropFormatter.DropChoice choice = choices.getOptions()
+            .get(safeIndex);
+        switch (choice.getSource()) {
+            case ITEM_ID:
+                return I18nUtil.tr("ae2patterngen.gui.pattern_gen.drag_choice.id");
+            case ORE_DICT:
+                return I18nUtil.tr("ae2patterngen.gui.pattern_gen.drag_choice.ore");
+            case DISPLAY_NAME:
+                return I18nUtil.tr("ae2patterngen.gui.pattern_gen.drag_choice.name");
+            case CUSTOM:
+            default:
+                return I18nUtil.tr("ae2patterngen.gui.pattern_gen.drag_choice.custom");
+        }
     }
 }

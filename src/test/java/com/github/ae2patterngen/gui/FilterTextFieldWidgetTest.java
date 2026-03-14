@@ -2,12 +2,14 @@ package com.github.ae2patterngen.gui;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import net.minecraft.item.Item;
@@ -45,6 +47,18 @@ public class FilterTextFieldWidgetTest {
 
         assertFalse(invokeHandleDragAndDrop(widget, new ItemStack(new Item()), 0));
         assertEquals("keep", invokeGetText(widget));
+    }
+
+    @Test
+    public void successfulDropPublishesChoicesToListener() {
+        Object widget = newWidget(stack -> "[8119:12]");
+        AtomicReference<Object> publishedChoices = new AtomicReference<Object>();
+
+        invokeSetDropChoicesListener(widget, publishedChoices::set);
+
+        assertTrue(invokeHandleDragAndDrop(widget, new ItemStack(new Item()), 0));
+        assertNotNull("Expected drag choices to be published", publishedChoices.get());
+        assertEquals("[8119:12]", invokeDefaultChoiceToken(publishedChoices.get()));
     }
 
     private Object newWidget(Function<ItemStack, String> formatter) {
@@ -111,6 +125,51 @@ public class FilterTextFieldWidgetTest {
         } catch (InvocationTargetException e) {
             Throwable cause = e.getCause() != null ? e.getCause() : e;
             fail("getText threw unexpectedly: " + cause.getMessage());
+        }
+        return "";
+    }
+
+    private void invokeSetDropChoicesListener(Object widget, java.util.function.Consumer<Object> listener) {
+        try {
+            Method method = widget.getClass()
+                .getDeclaredMethod("setDropChoicesListener", java.util.function.Consumer.class);
+            method.setAccessible(true);
+            method.invoke(widget, listener);
+        } catch (NoSuchMethodException e) {
+            fail("Expected FilterTextFieldWidget.setDropChoicesListener(Consumer)");
+        } catch (IllegalAccessException e) {
+            fail("Unable to access setDropChoicesListener: " + e.getMessage());
+        } catch (InvocationTargetException e) {
+            Throwable cause = e.getCause() != null ? e.getCause() : e;
+            fail("setDropChoicesListener threw unexpectedly: " + cause.getMessage());
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private String invokeDefaultChoiceToken(Object choices) {
+        try {
+            Method indexMethod = choices.getClass()
+                .getDeclaredMethod("getDefaultIndex");
+            indexMethod.setAccessible(true);
+            int index = ((Integer) indexMethod.invoke(choices)).intValue();
+
+            Method optionsMethod = choices.getClass()
+                .getDeclaredMethod("getOptions");
+            optionsMethod.setAccessible(true);
+            java.util.List<Object> options = (java.util.List<Object>) optionsMethod.invoke(choices);
+            Object option = options.get(index);
+
+            Method tokenMethod = option.getClass()
+                .getDeclaredMethod("getToken");
+            tokenMethod.setAccessible(true);
+            return (String) tokenMethod.invoke(option);
+        } catch (NoSuchMethodException e) {
+            fail("Expected drag choice accessors to exist");
+        } catch (IllegalAccessException e) {
+            fail("Unable to access drag choice accessors: " + e.getMessage());
+        } catch (InvocationTargetException e) {
+            Throwable cause = e.getCause() != null ? e.getCause() : e;
+            fail("Drag choice accessor threw unexpectedly: " + cause.getMessage());
         }
         return "";
     }
