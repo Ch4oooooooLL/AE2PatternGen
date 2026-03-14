@@ -29,6 +29,7 @@ public class LangKeyCompletenessTest {
         "ae2patterngen.gui.recipe_picker.title",
         "ae2patterngen.msg.storage.empty_extract",
         "ae2patterngen.msg.generate.no_matching_map",
+        "ae2patterngen.msg.cache.missing_or_invalid",
         "ae2patterngen.msg.pattern.generated_and_consumed",
         "ae2patterngen.msg.conflict.cancelled",
         "ae2patterngen.command.help.title",

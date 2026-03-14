@@ -12,6 +12,11 @@ public class ForgeConfigTest {
     }
 
     @Test
+    public void recipeCacheDirectoryUsesExpectedDefault() {
+        assertEquals("recipe_cache", ForgeConfig.getRecipeCacheDirectoryName());
+    }
+
+    @Test
     public void normalizeConflictBatchSizeClampsOutOfRangeValues() {
         assertEquals(1, ForgeConfig.normalizeConflictBatchSize(0));
         assertEquals(1, ForgeConfig.normalizeConflictBatchSize(-5));

@@ -36,8 +36,12 @@ ae2patterngen.gui.pattern_gen.status.map_matches=● Matched Maps: %s
 ae2patterngen.gui.pattern_gen.button.preview_count=Preview Count
 ae2patterngen.gui.pattern_gen.status.recipes_before_filter=● Recipes Before Filter: %s
 ae2patterngen.gui.pattern_gen.status.filter_result=● Filter Result: %s -> %s
+ae2patterngen.gui.pattern_gen.button.build_cache=Build Cache
 ae2patterngen.gui.pattern_gen.button.generate=▶ Generate
 ae2patterngen.gui.pattern_gen.error.empty_map=Error: recipe map must not be empty
+ae2patterngen.gui.pattern_gen.status.preview_requested=● Preview request sent
+ae2patterngen.gui.pattern_gen.status.cache_requested=● Cache build requested
+ae2patterngen.gui.pattern_gen.status.cache_ready=● Cache Ready: %s maps / %s recipes
 ae2patterngen.gui.pattern_gen.status.generate_requested=● Generation request sent
 
 # Pattern Storage GUI
@@ -110,9 +114,9 @@ ae2patterngen.command.count.result=Matched %s recipe(s)
 # Tooltip
 ae2patterngen.tooltip.feature.title=[Features]
 ae2patterngen.tooltip.feature.batch_encode=Batch Encoding
-ae2patterngen.tooltip.feature.batch_encode.desc=Batch export GregTech machine recipes as AE2 processing patterns
-ae2patterngen.tooltip.feature.smart_filter=Smart Filtering
-ae2patterngen.tooltip.feature.smart_filter.desc=Supports regex matching, material replacement, and tier filtering
+ae2patterngen.tooltip.feature.batch_encode.desc=Build or refresh cache first, then batch export GregTech machine recipes as AE2 processing patterns
+ae2patterngen.tooltip.feature.smart_filter=Cache-Backed Filtering
+ae2patterngen.tooltip.feature.smart_filter.desc=Preview and generate both use the persisted recipe cache with regex, replacement, and tier filtering
 ae2patterngen.tooltip.feature.explicit_blacklist=Explicit Filter Syntax
 ae2patterngen.tooltip.feature.explicit_blacklist.desc=All filter fields use [ID] / (ore dict regex) / {display name regex}; * means no filter
 ae2patterngen.tooltip.feature.conflict_resolution=Conflict Resolution
@@ -123,14 +127,14 @@ ae2patterngen.tooltip.feature.equivalent_consume=Equivalent Consume
 ae2patterngen.tooltip.feature.equivalent_consume.desc=Consumes blank patterns from bound ME network or inventory automatically
 ae2patterngen.tooltip.usage.title=[Usage]
 ae2patterngen.tooltip.usage.right_click_air=Right Click (Air)
-ae2patterngen.tooltip.usage.right_click_air.desc=Open generation configuration GUI
+ae2patterngen.tooltip.usage.right_click_air.desc=Open the generator GUI and build or refresh recipe cache before preview/generate
 ae2patterngen.tooltip.usage.shift_right_click_air=Shift + Right Click (Air)
 ae2patterngen.tooltip.usage.shift_right_click_air.desc=Open virtual pattern storage
 ae2patterngen.tooltip.usage.shift_right_click_block=Shift + Right Click (Block)
 ae2patterngen.tooltip.usage.shift_right_click_block.desc=Detect block properties; export patterns if target is a container
 ae2patterngen.tooltip.usage.network_binding=Network Binding
 ae2patterngen.tooltip.usage.network_binding.desc=Bind to ME network via security terminal
-ae2patterngen.tooltip.hint.quick_open=Right-click to open generator GUI
+ae2patterngen.tooltip.hint.quick_open=Right-click to open generator GUI; build cache before preview/generate
 ae2patterngen.tooltip.hint.quick_storage=Shift + right-click air to open storage GUI
 ae2patterngen.tooltip.hint.quick_detect_export=Shift + right-click block to detect properties / export patterns
 ae2patterngen.tooltip.hint.hold_shift_prefix=Hold
@@ -157,6 +161,12 @@ ae2patterngen.msg.generate.replacement_applied=[AE2PatternGen] Ore dictionary re
 ae2patterngen.msg.generate.conflicts_detected=[AE2PatternGen] Detected %s conflict group(s). Please choose manually.
 ae2patterngen.msg.generate.conflicts_too_large=[AE2PatternGen] Conflict result is too large: %s filtered recipes and %s conflict groups. Interactive picker was skipped. Narrow your filters first (recommended below %s recipes and %s conflict groups).
 ae2patterngen.msg.generate.internal_error=[AE2PatternGen] Internal filter error. Please check your filter input and retry.
+ae2patterngen.msg.cache.missing_or_invalid=[AE2PatternGen] Recipe cache is missing or invalid. Please create or refresh the cache first.
+ae2patterngen.msg.cache.build_started=[AE2PatternGen] Recipe cache build started.
+ae2patterngen.msg.cache.build_already_running=[AE2PatternGen] Recipe cache build is already running.
+ae2patterngen.msg.cache.progress=[AE2PatternGen] Caching %s (%s/%s)
+ae2patterngen.msg.cache.build_failed=[AE2PatternGen] Recipe cache build failed: %s
+ae2patterngen.msg.cache.statistics=[AE2PatternGen] Cache ready: %s map(s), %s recipe(s), %s mod(s), %s bytes
 
 # Message - Conflict
 ae2patterngen.msg.conflict.cancelled=[AE2PatternGen] Conflict selection cancelled.

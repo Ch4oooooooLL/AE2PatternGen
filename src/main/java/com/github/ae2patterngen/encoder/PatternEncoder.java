@@ -9,6 +9,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraftforge.fluids.FluidStack;
 
+import com.github.ae2patterngen.config.ForgeConfig;
 import com.github.ae2patterngen.recipe.RecipeEntry;
 
 /**
@@ -17,9 +18,6 @@ import com.github.ae2patterngen.recipe.RecipeEntry;
  * 支持物品和流体编码。流体通过 AE2FC 的 ItemFluidDrop 转为物品表示。
  */
 public class PatternEncoder {
-
-    // GTNH 2.8.4 AE2 Unofficial 的已编码样板物品 ID
-    private static final String AE2_ENCODED_PATTERN_ID = "appliedenergistics2:item.ItemEncodedPattern";
 
     /** 缓存 AE2FC 是否可用 */
     private static Boolean ae2fcAvailable = null;
@@ -156,7 +154,6 @@ public class PatternEncoder {
     }
 
     private static Item findEncodedPatternItem() {
-        // 1. 优先通过 AE2 API 获取正确的定义
         try {
             for (ItemStack stack : appeng.api.AEApi.instance()
                 .definitions()
@@ -168,11 +165,9 @@ public class PatternEncoder {
                     return stack.getItem();
                 }
             }
-        } catch (Throwable e) {
-            // Fallback
-        }
+        } catch (Throwable e) {}
 
-        // 2. 备选方案: 通过注册名
-        return (Item) Item.itemRegistry.getObject(AE2_ENCODED_PATTERN_ID);
+        String patternId = ForgeConfig.getEncodedPatternId();
+        return (Item) Item.itemRegistry.getObject(patternId);
     }
 }

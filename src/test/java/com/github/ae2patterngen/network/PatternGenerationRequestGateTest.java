@@ -8,6 +8,8 @@ import java.util.UUID;
 import org.junit.After;
 import org.junit.Test;
 
+import com.github.ae2patterngen.config.ForgeConfig;
+
 public class PatternGenerationRequestGateTest {
 
     @After
@@ -20,16 +22,11 @@ public class PatternGenerationRequestGateTest {
         UUID playerUUID = UUID.randomUUID();
         String fingerprint = PatternGenerationRequestGate
             .fingerprint("gt.recipe.assembler", "(dustCopper)", "", "", "", "", "", 3);
+        long windowMs = ForgeConfig.getDuplicateWindowMs();
 
         assertTrue(PatternGenerationRequestGate.shouldProcess(playerUUID, fingerprint, 1_000L));
-        assertFalse(
-            PatternGenerationRequestGate
-                .shouldProcess(playerUUID, fingerprint, 1_000L + PatternGenerationRequestGate.DUPLICATE_WINDOW_MS));
-        assertTrue(
-            PatternGenerationRequestGate.shouldProcess(
-                playerUUID,
-                fingerprint,
-                1_000L + PatternGenerationRequestGate.DUPLICATE_WINDOW_MS + 1L));
+        assertFalse(PatternGenerationRequestGate.shouldProcess(playerUUID, fingerprint, 1_000L + windowMs));
+        assertTrue(PatternGenerationRequestGate.shouldProcess(playerUUID, fingerprint, 1_000L + windowMs + 1L));
     }
 
     @Test

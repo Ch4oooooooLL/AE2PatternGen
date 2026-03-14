@@ -8,6 +8,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumChatFormatting;
 import net.minecraftforge.fluids.FluidStack;
 
+import com.github.ae2patterngen.config.ForgeConfig;
 import com.github.ae2patterngen.network.NetworkHandler;
 import com.github.ae2patterngen.network.PacketRecipeConflictBatch;
 import com.github.ae2patterngen.network.PacketRecipeConflicts;
@@ -26,11 +27,6 @@ import com.gtnewhorizons.modularui.common.widget.TextWidget;
 
 public class GuiRecipePicker {
 
-    private static final int GUI_W = 404;
-    private static final int MIN_GUI_H = 250;
-    private static final int IDEAL_GUI_H = 296;
-    private static final int ROW_H = 30;
-    private static final int ROW_GAP = 1;
     private static final int SELECT_BTN_W = 54;
     private static ClientBatchState activeState;
 
@@ -87,26 +83,31 @@ public class GuiRecipePicker {
             Minecraft.getMinecraft().displayWidth,
             Minecraft.getMinecraft().displayHeight);
         int maxH = Minecraft.getMinecraft().displayHeight / res.getScaleFactor() - 20;
-        int guiH = Math.min(maxH, Math.max(MIN_GUI_H, IDEAL_GUI_H));
+        int guiWidth = ForgeConfig.getRecipePickerGuiWidth();
+        int minHeight = ForgeConfig.getRecipePickerMinHeight();
+        int idealHeight = ForgeConfig.getRecipePickerIdealHeight();
+        int guiHeight = Math.min(maxH, Math.max(minHeight, idealHeight));
+        int rowHeight = ForgeConfig.getRecipePickerRowHeight();
+        int rowGap = ForgeConfig.getRecipePickerRowGap();
 
-        ModularWindow.Builder builder = ModularWindow.builder(GUI_W, guiH);
+        ModularWindow.Builder builder = ModularWindow.builder(guiWidth, guiHeight);
         builder.setBackground(com.gtnewhorizons.modularui.api.ModularUITextures.VANILLA_BACKGROUND);
 
         TextWidget titleText = new TextWidget("");
         titleText
-            .setStringSupplier(() -> EnumChatFormatting.BOLD + trimToPixelWidth(buildTitleText(state), GUI_W - 20));
+            .setStringSupplier(() -> EnumChatFormatting.BOLD + trimToPixelWidth(buildTitleText(state), guiWidth - 20));
         titleText.setScale(1.2f);
-        titleText.setSize(GUI_W - 16, 20);
+        titleText.setSize(guiWidth - 16, 20);
         titleText.setPos(8, 8);
         builder.widget(titleText);
 
         final int topY = 34;
         final int footerH = 12;
-        final int contentH = guiH - topY - footerH - 6;
+        final int contentH = guiHeight - topY - footerH - 6;
         final int leftW = 218;
         final int gap = 6;
         final int rightX = 8 + leftW + gap;
-        final int rightW = GUI_W - rightX - 8;
+        final int rightW = guiWidth - rightX - 8;
 
         TextWidget listTitle = new TextWidget("");
         listTitle.setStringSupplier(
@@ -132,12 +133,12 @@ public class GuiRecipePicker {
 
         for (int i = 0; i < rowCapacity; i++) {
             final int recipeIndex = i;
-            int rowY = i * (ROW_H + ROW_GAP);
+            int rowY = i * (rowHeight + rowGap);
 
             ButtonWidget previewBtn = new ButtonWidget();
             previewBtn.setSynced(false, false);
             previewBtn.setPos(2, rowY + 1);
-            previewBtn.setSize(previewBtnW, ROW_H);
+            previewBtn.setSize(previewBtnW, rowHeight);
             previewBtn.setBackground(com.gtnewhorizons.modularui.api.ModularUITextures.VANILLA_BUTTON_NORMAL);
             previewBtn.setEnabled(
                 widget -> isValidRecipeIndex(
@@ -189,7 +190,7 @@ public class GuiRecipePicker {
             ButtonWidget selectBtn = new ButtonWidget();
             selectBtn.setSynced(false, false);
             selectBtn.setPos(selectBtnX, rowY + 1);
-            selectBtn.setSize(SELECT_BTN_W, ROW_H);
+            selectBtn.setSize(SELECT_BTN_W, rowHeight);
             selectBtn.setBackground(com.gtnewhorizons.modularui.api.ModularUITextures.VANILLA_BUTTON_NORMAL);
             selectBtn.setEnabled(
                 widget -> isValidRecipeIndex(
@@ -267,7 +268,7 @@ public class GuiRecipePicker {
         detailScroll.setPos(rightX + 6, topY + 6);
         detailScroll.setSize(rightW - 12, contentH - 12);
 
-        final int maxDetailLines = 90;
+        final int maxDetailLines = ForgeConfig.getRecipePickerMaxDetailLines();
         for (int lineIndex = 0; lineIndex < maxDetailLines; lineIndex++) {
             final int idx = lineIndex;
             TextWidget line = new TextWidget("");
@@ -278,14 +279,14 @@ public class GuiRecipePicker {
         builder.widget(detailScroll);
 
         TextWidget statusWidget = new TextWidget("");
-        statusWidget.setStringSupplier(() -> trimToPixelWidth(state.statusText, GUI_W - 16));
-        statusWidget.setPos(8, guiH - 11);
+        statusWidget.setStringSupplier(() -> trimToPixelWidth(state.statusText, guiWidth - 16));
+        statusWidget.setPos(8, guiHeight - 11);
         builder.widget(statusWidget);
 
         final int cancelBtnW = 54;
         final int cancelBtnH = 12;
-        final int cancelBtnX = GUI_W - 8 - cancelBtnW;
-        final int cancelBtnY = guiH - 24;
+        final int cancelBtnX = guiWidth - 8 - cancelBtnW;
+        final int cancelBtnY = guiHeight - 24;
 
         ButtonWidget cancelBtn = new ButtonWidget();
         cancelBtn.setSynced(false, false);

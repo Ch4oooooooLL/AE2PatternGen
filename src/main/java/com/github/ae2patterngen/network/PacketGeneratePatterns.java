@@ -10,9 +10,10 @@ import net.minecraft.util.EnumChatFormatting;
 import com.github.ae2patterngen.encoder.OreDictReplacer;
 import com.github.ae2patterngen.filter.CompositeFilter;
 import com.github.ae2patterngen.filter.RecipeFilterFactory;
-import com.github.ae2patterngen.recipe.GTRecipeSource;
 import com.github.ae2patterngen.recipe.RecipeEntry;
+import com.github.ae2patterngen.storage.CacheQueryResult;
 import com.github.ae2patterngen.storage.PatternStorage;
+import com.github.ae2patterngen.storage.RecipeCacheService;
 import com.github.ae2patterngen.util.I18nUtil;
 import com.github.ae2patterngen.util.ItemStackUtil;
 
@@ -108,8 +109,21 @@ public class PacketGeneratePatterns implements IMessage {
                     return null;
                 }
 
+                CompositeFilter filter = RecipeFilterFactory.build(
+                    message.outputOreDict,
+                    message.inputOreDict,
+                    message.ncItem,
+                    message.blacklistInput,
+                    message.blacklistOutput,
+                    message.targetTier);
+                CacheQueryResult queryResult = RecipeCacheService.loadAndFilterRecipes(message.recipeMapId, filter);
+                if (!queryResult.cacheValid) {
+                    send(player, EnumChatFormatting.RED, "ae2patterngen.msg.cache.missing_or_invalid");
+                    return null;
+                }
+
                 // 1. 查找匹配的配方表
-                List<String> matchedMaps = GTRecipeSource.findMatchingRecipeMaps(message.recipeMapId);
+                List<String> matchedMaps = queryResult.matchedMapIds;
                 if (matchedMaps.isEmpty()) {
                     send(
                         player,
@@ -125,33 +139,15 @@ public class PacketGeneratePatterns implements IMessage {
                     "ae2patterngen.msg.generate.matched_maps",
                     String.join(", ", matchedMaps));
 
-                // 2. 收集原始配方
-                List<RecipeEntry> recipes = GTRecipeSource.collectRecipes(message.recipeMapId);
-                int totalBeforeFilter = recipes.size();
-
-                // 3. 构建过滤器
-                CompositeFilter filter = RecipeFilterFactory.build(
-                    message.outputOreDict,
-                    message.inputOreDict,
-                    message.ncItem,
-                    message.blacklistInput,
-                    message.blacklistOutput,
-                    message.targetTier);
-
-                // 4. 应用过滤
-                List<RecipeEntry> filtered = new java.util.ArrayList<>();
-                for (RecipeEntry recipe : recipes) {
-                    if (filter.matches(recipe)) {
-                        filtered.add(recipe);
-                    }
-                }
+                // 2. 使用缓存查询结果
+                List<RecipeEntry> filtered = new java.util.ArrayList<>(queryResult.recipes);
 
                 send(
                     player,
                     EnumChatFormatting.GRAY,
                     "ae2patterngen.msg.generate.filter_result",
-                    totalBeforeFilter,
-                    filtered.size());
+                    queryResult.totalLoadedCount,
+                    queryResult.totalFilteredCount);
 
                 if (filtered.isEmpty()) {
                     send(player, EnumChatFormatting.YELLOW, "ae2patterngen.msg.generate.no_match_after_filter");

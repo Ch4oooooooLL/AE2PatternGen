@@ -5,12 +5,12 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 
+import com.github.ae2patterngen.config.ForgeConfig;
+
 /**
  * Collapses duplicate generate requests emitted by a single GUI interaction.
  */
 final class PatternGenerationRequestGate {
-
-    static final long DUPLICATE_WINDOW_MS = 500L;
 
     private static final Map<UUID, RecentRequest> RECENT_REQUESTS = new HashMap<UUID, RecentRequest>();
 
@@ -19,9 +19,10 @@ final class PatternGenerationRequestGate {
     static synchronized boolean shouldProcess(UUID playerUUID, String fingerprint, long nowMillis) {
         cleanupExpired(nowMillis);
 
+        long duplicateWindow = ForgeConfig.getDuplicateWindowMs();
         RecentRequest previous = RECENT_REQUESTS.get(playerUUID);
         if (previous != null && previous.fingerprint.equals(fingerprint)
-            && nowMillis - previous.timestampMillis <= DUPLICATE_WINDOW_MS) {
+            && nowMillis - previous.timestampMillis <= duplicateWindow) {
             return false;
         }
 
@@ -52,12 +53,13 @@ final class PatternGenerationRequestGate {
     }
 
     private static void cleanupExpired(long nowMillis) {
+        long duplicateWindow = ForgeConfig.getDuplicateWindowMs();
         Iterator<Map.Entry<UUID, RecentRequest>> iterator = RECENT_REQUESTS.entrySet()
             .iterator();
         while (iterator.hasNext()) {
             RecentRequest request = iterator.next()
                 .getValue();
-            if (nowMillis - request.timestampMillis > DUPLICATE_WINDOW_MS) {
+            if (nowMillis - request.timestampMillis > duplicateWindow) {
                 iterator.remove();
             }
         }

@@ -6,14 +6,13 @@ import java.util.List;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumChatFormatting;
 
-import com.github.ae2patterngen.filter.CompositeFilter;
-import com.github.ae2patterngen.filter.RecipeFilterFactory;
+import com.github.ae2patterngen.config.ForgeConfig;
 import com.github.ae2patterngen.item.ItemPatternGenerator;
 import com.github.ae2patterngen.network.NetworkHandler;
+import com.github.ae2patterngen.network.PacketCreateCache;
 import com.github.ae2patterngen.network.PacketGeneratePatterns;
+import com.github.ae2patterngen.network.PacketPreviewRecipeCount;
 import com.github.ae2patterngen.network.PacketSaveFields;
-import com.github.ae2patterngen.recipe.GTRecipeSource;
-import com.github.ae2patterngen.recipe.RecipeEntry;
 import com.github.ae2patterngen.util.I18nUtil;
 import com.gtnewhorizons.modularui.api.drawable.IDrawable;
 import com.gtnewhorizons.modularui.api.drawable.Text;
@@ -27,30 +26,31 @@ import com.gtnewhorizons.modularui.common.widget.textfield.TextFieldWidget;
 
 public class GuiPatternGen {
 
-    private static final int GUI_W = 260;
-    private static final int GUI_H = 315;
     private static final int DRAG_SELECTOR_W = 36;
     private static final int DRAG_SELECTOR_BG = 0xEE2A2A42;
 
     public static ModularWindow createWindow(UIBuildContext buildContext, ItemStack held) {
-        ModularWindow.Builder builder = ModularWindow.builder(GUI_W, GUI_H);
+        int guiWidth = ForgeConfig.getPatternGenGuiWidth();
+        int guiHeight = ForgeConfig.getPatternGenGuiHeight();
+
+        ModularWindow.Builder builder = ModularWindow.builder(guiWidth, guiHeight);
 
         builder.setBackground(com.gtnewhorizons.modularui.api.ModularUITextures.VANILLA_BACKGROUND);
 
         TextWidget titleText = new TextWidget(
             EnumChatFormatting.BOLD + I18nUtil.tr("ae2patterngen.gui.pattern_gen.title"));
         titleText.setScale(1.2f);
-        titleText.setSize(GUI_W - 16, 20);
+        titleText.setSize(guiWidth - 16, 20);
         titleText.setPos(8, 8);
         builder.widget(titleText);
 
         Scrollable scrollable = new Scrollable().setVerticalScroll();
         scrollable.setPos(8, 24);
-        scrollable.setSize(GUI_W - 16, GUI_H - 24 - 40);
+        scrollable.setSize(guiWidth - 16, guiHeight - 24 - 40);
 
         int refY = 0;
-        int fieldW = GUI_W - 16 - 80 - 12;
-        int fullFieldW = GUI_W - 16 - 12;
+        int fieldW = guiWidth - 16 - 80 - 12;
+        int fullFieldW = guiWidth - 16 - 12;
         int inputX = 80;
 
         TextWidget labelRecipe = new TextWidget(
@@ -223,7 +223,7 @@ public class GuiPatternGen {
         labelRepCount.setPos(6, refY + 20);
         scrollable.widget(labelRepCount);
 
-        int btnCfgX = GUI_W - 16 - 6 - 80;
+        int btnCfgX = guiWidth - 16 - 6 - 80;
         int btnCfgY = refY + 14;
         ButtonWidget btnConfig = new ButtonWidget();
         btnConfig.setSynced(false, false);
@@ -245,16 +245,17 @@ public class GuiPatternGen {
 
         builder.widget(scrollable);
 
-        String[] statusMsg = new String[] { I18nUtil.tr("ae2patterngen.gui.pattern_gen.status.ready") };
         TextWidget statusWidget = new TextWidget("");
-        statusWidget.setStringSupplier(() -> statusMsg[0]);
-        statusWidget.setPos(8, GUI_H - 12);
+        GuiPatternGenStatusBridge.setStatus(I18nUtil.tr("ae2patterngen.gui.pattern_gen.status.ready"));
+        statusWidget.setStringSupplier(GuiPatternGenStatusBridge::getStatus);
+        statusWidget.setPos(8, guiHeight - 12);
         builder.widget(statusWidget);
 
-        int btnW = 76;
+        int btnW = 57;
         int btnH = 20;
-        int btnStartX = (GUI_W - (btnW * 3 + 6)) / 2;
-        int btnY = GUI_H - 32;
+        int btnGap = 3;
+        int btnStartX = (guiWidth - (btnW * 3 + btnGap * 2)) / 2;
+        int btnY = guiHeight - 32;
 
         Runnable saveFunction = () -> {
             NetworkHandler.INSTANCE.sendToServer(
@@ -269,24 +270,23 @@ public class GuiPatternGen {
                     currentTierIndex[0] - 1));
         };
 
-        ButtonWidget btnList = new ButtonWidget();
-        btnList.setSynced(false, false);
-        btnList.setPos(btnStartX, btnY);
-        btnList.setSize(btnW, btnH);
-        btnList.setBackground(com.gtnewhorizons.modularui.api.ModularUITextures.VANILLA_BUTTON_NORMAL);
+        ButtonWidget btnCache = new ButtonWidget();
+        btnCache.setSynced(false, false);
+        btnCache.setPos(btnStartX, btnY);
+        btnCache.setSize(btnW, btnH);
+        btnCache.setBackground(com.gtnewhorizons.modularui.api.ModularUITextures.VANILLA_BUTTON_NORMAL);
 
-        TextWidget btnListText = new TextWidget(I18nUtil.tr("ae2patterngen.gui.pattern_gen.button.list_maps"));
-        btnListText.setPos(btnStartX + 14, btnY + 6);
+        TextWidget btnCacheText = new TextWidget(I18nUtil.tr("ae2patterngen.gui.pattern_gen.button.build_cache"));
+        btnCacheText.setPos(btnStartX + 10, btnY + 6);
 
-        btnList.setOnClick((cd, w) -> {
-            saveFunction.run();
-            List<String> matched = GTRecipeSource.findMatchingRecipeMaps(tfRecipeMap.getText());
-            statusMsg[0] = I18nUtil.tr("ae2patterngen.gui.pattern_gen.status.map_matches", matched.size());
+        btnCache.setOnClick((cd, w) -> {
+            NetworkHandler.INSTANCE.sendToServer(new PacketCreateCache());
+            GuiPatternGenStatusBridge.setStatus(I18nUtil.tr("ae2patterngen.gui.pattern_gen.status.cache_requested"));
         });
-        builder.widget(btnList);
-        builder.widget(btnListText);
+        builder.widget(btnCache);
+        builder.widget(btnCacheText);
 
-        int btnPBX = btnStartX + btnW + 3;
+        int btnPBX = btnStartX + btnW + btnGap;
         ButtonWidget btnPreview = new ButtonWidget();
         btnPreview.setSynced(false, false);
         btnPreview.setPos(btnPBX, btnY);
@@ -297,28 +297,28 @@ public class GuiPatternGen {
         btnPreviewText.setPos(btnPBX + 14, btnY + 6);
 
         btnPreview.setOnClick((cd, w) -> {
-            saveFunction.run();
-            List<RecipeEntry> recipes = GTRecipeSource.collectRecipes(tfRecipeMap.getText());
-            CompositeFilter filter = RecipeFilterFactory.build(
-                tfOutputOre.getText(),
-                tfInputOre.getText(),
-                tfNCItem.getText(),
-                tfBlacklistIn.getText(),
-                tfBlacklistOut.getText(),
-                currentTierIndex[0] - 1);
-            int filteredCount = 0;
-            for (RecipeEntry recipe : recipes) {
-                if (filter.matches(recipe)) {
-                    filteredCount++;
-                }
+            if (tfRecipeMap.getText()
+                .isEmpty()) {
+                GuiPatternGenStatusBridge
+                    .setStatus(EnumChatFormatting.RED + I18nUtil.tr("ae2patterngen.gui.pattern_gen.error.empty_map"));
+                return;
             }
-            statusMsg[0] = I18nUtil
-                .tr("ae2patterngen.gui.pattern_gen.status.filter_result", recipes.size(), filteredCount);
+            saveFunction.run();
+            NetworkHandler.INSTANCE.sendToServer(
+                new PacketPreviewRecipeCount(
+                    tfRecipeMap.getText(),
+                    tfOutputOre.getText(),
+                    tfInputOre.getText(),
+                    tfNCItem.getText(),
+                    tfBlacklistIn.getText(),
+                    tfBlacklistOut.getText(),
+                    currentTierIndex[0] - 1));
+            GuiPatternGenStatusBridge.setStatus(I18nUtil.tr("ae2patterngen.gui.pattern_gen.status.preview_requested"));
         });
         builder.widget(btnPreview);
         builder.widget(btnPreviewText);
 
-        int btnGBX = btnStartX + (btnW + 3) * 2;
+        int btnGBX = btnStartX + (btnW + btnGap) * 2;
         ButtonWidget btnGenerate = new ButtonWidget();
         btnGenerate.setSynced(false, false);
         btnGenerate.setPos(btnGBX, btnY);
@@ -331,7 +331,8 @@ public class GuiPatternGen {
         btnGenerate.setOnClick((cd, w) -> {
             if (tfRecipeMap.getText()
                 .isEmpty()) {
-                statusMsg[0] = EnumChatFormatting.RED + I18nUtil.tr("ae2patterngen.gui.pattern_gen.error.empty_map");
+                GuiPatternGenStatusBridge
+                    .setStatus(EnumChatFormatting.RED + I18nUtil.tr("ae2patterngen.gui.pattern_gen.error.empty_map"));
                 return;
             }
             saveFunction.run();
@@ -345,7 +346,7 @@ public class GuiPatternGen {
                     tfBlacklistOut.getText(),
                     "",
                     currentTierIndex[0] - 1));
-            statusMsg[0] = I18nUtil.tr("ae2patterngen.gui.pattern_gen.status.generate_requested");
+            GuiPatternGenStatusBridge.setStatus(I18nUtil.tr("ae2patterngen.gui.pattern_gen.status.generate_requested"));
         });
         builder.widget(btnGenerate);
         builder.widget(btnGenerateText);

@@ -16,6 +16,12 @@ public class NetworkHandler {
     private static int packetId = 0;
 
     public static void init() {
+        INSTANCE.registerMessage(PacketCreateCache.Handler.class, PacketCreateCache.class, packetId++, Side.SERVER);
+        INSTANCE.registerMessage(
+            PacketPreviewRecipeCount.Handler.class,
+            PacketPreviewRecipeCount.class,
+            packetId++,
+            Side.SERVER);
         INSTANCE.registerMessage(
             PacketGeneratePatterns.Handler.class,
             PacketGeneratePatterns.class,
@@ -28,6 +34,14 @@ public class NetworkHandler {
 
         INSTANCE
             .registerMessage(PacketRecipeConflicts.Handler.class, PacketRecipeConflicts.class, packetId++, Side.CLIENT);
+        INSTANCE.registerMessage(
+            PacketPreviewRecipeCountResult.Handler.class,
+            PacketPreviewRecipeCountResult.class,
+            packetId++,
+            Side.CLIENT);
+        INSTANCE.registerMessage(PacketCacheProgress.Handler.class, PacketCacheProgress.class, packetId++, Side.CLIENT);
+        INSTANCE
+            .registerMessage(PacketCacheStatistics.Handler.class, PacketCacheStatistics.class, packetId++, Side.CLIENT);
         INSTANCE.registerMessage(
             PacketResolveConflicts.Handler.class,
             PacketResolveConflicts.class,

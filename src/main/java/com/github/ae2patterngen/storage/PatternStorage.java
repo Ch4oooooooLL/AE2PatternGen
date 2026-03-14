@@ -16,16 +16,16 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraftforge.common.DimensionManager;
 
+import com.github.ae2patterngen.config.ForgeConfig;
+
 /**
  * 样板虚拟仓储 — 基于本地文件的持久化存储
  * <p>
- * 存储路径: {@code <世界存档>/ae2patterngen/<玩家UUID>.dat}
+ * 存储路径: {@code <世界存档>/<配置目录名>/<玩家UUID>.dat}
  * <p>
  * 文件格式: GZip 压缩的 NBT，包含样板列表和元数据。
  */
 public class PatternStorage {
-
-    private static final String DIR_NAME = "ae2patterngen";
 
     // NBT 键名
     private static final String KEY_PATTERNS = "Patterns";
@@ -406,7 +406,8 @@ public class PatternStorage {
 
     private static File getStorageFile(UUID playerUUID) {
         File worldDir = DimensionManager.getCurrentSaveRootDirectory();
-        File storageDir = new File(worldDir, DIR_NAME);
+        String dirName = ForgeConfig.getStorageDirectoryName();
+        File storageDir = new File(worldDir, dirName);
         return new File(storageDir, playerUUID.toString() + ".dat");
     }
 
