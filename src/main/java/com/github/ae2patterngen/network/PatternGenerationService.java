@@ -23,6 +23,14 @@ public final class PatternGenerationService {
     private PatternGenerationService() {}
 
     public static boolean generateAndStore(EntityPlayerMP player, String source, List<RecipeEntry> recipes) {
+        return generateAndStore(player, source, recipes, PatternStorage.CHANNEL_DEFAULT);
+    }
+
+    /**
+     * 生成样板并写入指定仓储通道（配方浏览器用 {@link PatternStorage#CHANNEL_BROWSER}）。
+     */
+    public static boolean generateAndStore(EntityPlayerMP player, String source, List<RecipeEntry> recipes,
+        String channel) {
         if (player == null || recipes == null || recipes.isEmpty()) {
             return false;
         }
@@ -40,7 +48,7 @@ public final class PatternGenerationService {
         }
 
         UUID uuid = player.getUniqueID();
-        if (!PatternStorage.save(uuid, patterns, source)) {
+        if (!PatternStorage.save(uuid, patterns, source, channel)) {
             send(player, EnumChatFormatting.RED, "ae2patterngen.msg.pattern.storage_write_failed");
             return false;
         }

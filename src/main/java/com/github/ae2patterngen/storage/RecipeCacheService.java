@@ -2,6 +2,8 @@ package com.github.ae2patterngen.storage;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -11,6 +13,7 @@ import java.util.concurrent.Executors;
 import com.github.ae2patterngen.filter.CompositeFilter;
 import com.github.ae2patterngen.recipe.GTRecipeSource;
 import com.github.ae2patterngen.recipe.RecipeEntry;
+import com.github.ae2patterngen.recipe.RuleIndexService;
 
 /**
  * Coordinates recipe cache validation, rebuilds, and query access.
@@ -24,6 +27,18 @@ public final class RecipeCacheService {
     private static volatile StorageBackend storageBackend = new DefaultStorageBackend();
     private static volatile RecipeCollector recipeCollector = new DefaultRecipeCollector();
     private static volatile EnvironmentInspector environmentInspector = new DefaultEnvironmentInspector();
+
+    private static final Comparator<RecipeCacheMetadata.RecipeMapInfo> RECIPE_MAP_ORDER = new Comparator<RecipeCacheMetadata.RecipeMapInfo>() {
+
+        @Override
+        public int compare(RecipeCacheMetadata.RecipeMapInfo left, RecipeCacheMetadata.RecipeMapInfo right) {
+            int byCount = Integer.compare(right.recipeCount, left.recipeCount);
+            if (byCount != 0) {
+                return byCount;
+            }
+            return left.mapId.compareTo(right.mapId);
+        }
+    };
 
     private RecipeCacheService() {}
 
@@ -86,6 +101,46 @@ public final class RecipeCacheService {
         return loadAndFilterRecipes(recipeMapKeyword, null);
     }
 
+    /**
+     * 精确读取单个配方表（不做关键字模糊匹配），供"按池"访问的场景使用。
+     */
+    public static CacheQueryResult loadSingleRecipeMap(String mapId) {
+        if (!validateCache()) {
+            return CacheQueryResult.invalid("cache_missing_or_invalid");
+        }
+        if (mapId == null || mapId.trim()
+            .isEmpty()) {
+            return CacheQueryResult.invalid("recipe_map_missing");
+        }
+
+        String key = mapId.trim();
+        if (!storageBackend.recipeMapExists(key)) {
+            return CacheQueryResult.invalid("recipe_map_missing");
+        }
+
+        List<RecipeEntry> recipes = storageBackend.loadRecipeMap(key);
+        List<String> mapIds = new ArrayList<String>();
+        mapIds.add(key);
+        return CacheQueryResult.valid(mapIds, recipes, recipes.size(), recipes.size());
+    }
+
+    /** 已缓存配方表摘要，按配方数量降序（数量相同按 mapId 升序）。 */
+    public static List<RecipeCacheMetadata.RecipeMapInfo> getCachedRecipeMaps() {
+        storageBackend.prepareAccessContext();
+        RecipeCacheMetadata metadata = storageBackend.loadMetadata();
+        List<RecipeCacheMetadata.RecipeMapInfo> maps = new ArrayList<RecipeCacheMetadata.RecipeMapInfo>();
+        if (metadata == null) {
+            return maps;
+        }
+        for (RecipeCacheMetadata.RecipeMapInfo info : metadata.recipeMaps.values()) {
+            if (info != null && info.mapId != null && !info.mapId.isEmpty()) {
+                maps.add(info);
+            }
+        }
+        Collections.sort(maps, RECIPE_MAP_ORDER);
+        return maps;
+    }
+
     public static CacheQueryResult loadAndFilterRecipes(String recipeMapKeyword, CompositeFilter filter) {
         if (!validateCache()) {
             return CacheQueryResult.invalid("cache_missing_or_invalid");
@@ -128,6 +183,7 @@ public final class RecipeCacheService {
     public static void clearCache() {
         storageBackend.prepareAccessContext();
         storageBackend.clearAll();
+        RuleIndexService.invalidate();
     }
 
     static CacheStatistics rebuildNow(ProgressNotifier notifier) {
@@ -200,6 +256,9 @@ public final class RecipeCacheService {
         if (!storageBackend.saveMetadata(metadata)) {
             throw new IllegalStateException("failed_to_save_recipe_cache_metadata");
         }
+
+        // 配方缓存已变化，派生出的规则分组索引必须重建。
+        RuleIndexService.invalidate();
 
         return buildStatistics(metadata);
     }

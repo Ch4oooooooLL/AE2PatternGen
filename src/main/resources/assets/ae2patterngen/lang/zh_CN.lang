@@ -197,3 +197,101 @@ ae2patterngen.msg.pattern.insufficient_blank_pattern=[AE2PatternGen] 生成失�
 
 # 消息 - 通用
 ae2patterngen.msg.common.unknown_item=未知物品
+
+item.ae2patterngen.recipe_browser.name=配方浏览器
+
+# 配方浏览器界面
+ae2patterngen.gui.browser.title=配方浏览器
+ae2patterngen.gui.browser.breadcrumb.pools=配方池
+ae2patterngen.gui.browser.breadcrumb.rules=%s / 规则组
+ae2patterngen.gui.browser.breadcrumb.recipes=%s / 配方明细
+ae2patterngen.gui.browser.breadcrumb.preview=%s / 预览与过滤
+ae2patterngen.gui.browser.breadcrumb.storage=浏览器仓储
+ae2patterngen.gui.browser.info.pools=已显示 %s / %s 个配方池
+ae2patterngen.gui.browser.info.rules=共 %s 条配方，%s 个规则组（已折叠: %s 个单例规则, %s 条无规则配方）
+ae2patterngen.gui.browser.info.recipes=已显示 %s / %s 条配方
+ae2patterngen.gui.browser.info.preview=%s | 组内 %s 条配方 | 命中 %s 条
+ae2patterngen.gui.browser.info.storage=共 %s 个样板 | 来源: %s
+ae2patterngen.gui.browser.empty.storage=浏览器仓储为空，请先在规则页生成样板。
+ae2patterngen.gui.browser.empty.pools=没有可用的配方池，请先构建缓存。
+ae2patterngen.gui.browser.empty.rules=当前开关下没有可展示的规则组。
+ae2patterngen.gui.browser.empty.recipes=该规则组内没有配方。
+ae2patterngen.gui.browser.button.back=返回
+ae2patterngen.gui.browser.button.close=关闭
+ae2patterngen.gui.browser.button.refresh=刷新
+ae2patterngen.gui.browser.button.search=查找
+ae2patterngen.gui.browser.button.generate_group=生成整组
+ae2patterngen.gui.browser.button.generate_one=生成
+ae2patterngen.gui.browser.button.singleton_on=单例规则: 开
+ae2patterngen.gui.browser.button.singleton_off=单例规则: 关
+ae2patterngen.gui.browser.button.unruled_on=无规则配方: 开
+ae2patterngen.gui.browser.button.unruled_off=无规则配方: 关
+ae2patterngen.gui.browser.page=%s / %s
+ae2patterngen.gui.browser.button.generate_matched=生成 %s 条
+ae2patterngen.gui.browser.button.filter_page=过滤并生成
+ae2patterngen.gui.browser.button.reset=重置
+ae2patterngen.gui.browser.button.delete=删除
+ae2patterngen.gui.browser.button.clear=清空
+ae2patterngen.gui.browser.button.preview=预览
+ae2patterngen.gui.browser.column.pool=配方池
+ae2patterngen.gui.browser.column.rule=规则（编程电路 / NC）
+ae2patterngen.gui.browser.column.recipe=产物 <- 输入
+ae2patterngen.gui.browser.column.recipe_count=配方数
+ae2patterngen.gui.browser.column.action=操作
+ae2patterngen.gui.browser.column.storage_item=产物预览
+ae2patterngen.gui.browser.storage.index=第 %s 个样板
+ae2patterngen.gui.browser.storage.deliver_hint=右键样板输入总成即可投递（会重命名总成并写入电路槽）。
+ae2patterngen.gui.browser.count.recipes=%s
+ae2patterngen.gui.browser.hint.open_rules=点击查看该池的规则组
+ae2patterngen.gui.browser.hint.open_preview=左键点击行看配方明细，点"生成整组"进入预览过滤
+ae2patterngen.gui.browser.filter.output=输出筛选
+ae2patterngen.gui.browser.filter.input=输入筛选
+ae2patterngen.gui.browser.filter.nc=NC 筛选
+ae2patterngen.gui.browser.filter.exclude_in=输入排除
+ae2patterngen.gui.browser.filter.exclude_out=输出排除
+ae2patterngen.gui.browser.filter.tier=电压
+ae2patterngen.gui.browser.filter.syntax=[id] / (矿辞) / {名字}
+ae2patterngen.gui.browser.preview.inputs=输入
+ae2patterngen.gui.browser.preview.outputs=输出
+ae2patterngen.gui.browser.preview.section=%s（%s 种）
+ae2patterngen.gui.browser.preview.more=+%s
+ae2patterngen.gui.browser.preview.not_loaded=点"预览"列出当前过滤条件下的输入与输出。
+ae2patterngen.gui.browser.rule.no_circuit=无电路
+ae2patterngen.gui.browser.rule.circuit=电路 %s
+ae2patterngen.gui.browser.rule.nc_count=NC x%s
+ae2patterngen.gui.browser.rule.unruled=无电路 / 无 NC
+ae2patterngen.gui.browser.no_input=无物品输入
+ae2patterngen.gui.browser.unknown_item=未知物品
+ae2patterngen.gui.browser.tooltip.pool=配方表: %s | 模组: %s
+ae2patterngen.gui.browser.tooltip.circuit=编程电路: %s
+ae2patterngen.gui.browser.tooltip.nc=不消耗物品: %s
+ae2patterngen.gui.browser.tooltip.outputs=产物示例: %s
+ae2patterngen.gui.browser.tooltip.duration=耗时: %s ticks | %s EU/t
+
+# 消息 - 配方浏览器
+ae2patterngen.msg.browser.pool_unavailable=[AE2PatternGen] 配方池不可用，必要时请重新构建配方缓存。
+ae2patterngen.msg.browser.rule_unavailable=[AE2PatternGen] 该规则组已不存在，请刷新列表。
+ae2patterngen.msg.browser.internal_error=[AE2PatternGen] 配方浏览器请求失败，详情请查看服务端日志。
+ae2patterngen.msg.browser.storage_missing_index=[AE2PatternGen] 该样板已不存在，请刷新列表。
+ae2patterngen.msg.browser.storage_cleared=[AE2PatternGen] 浏览器仓储已清空。
+
+# 提示 - 配方浏览器
+ae2patterngen.tooltip.browser.title=配方浏览器
+ae2patterngen.tooltip.browser.line1=右键按"配方池"浏览缓存的配方。
+ae2patterngen.tooltip.browser.line2=默认按编程电路与不消耗物品(NC)归类。
+ae2patterngen.tooltip.browser.line3=可生成某个规则组的全部样板，或组内单条配方。
+ae2patterngen.tooltip.browser.line4=蹲下右键空气打开本仓储；右键样板输入总成直接投递。
+
+# 配方浏览器 - 向样板输入总成投递
+ae2patterngen.delivery.name.circuit=电路%s
+ae2patterngen.delivery.name.no_circuit=无电路
+ae2patterngen.msg.browser.deliver_hint=右键样板输入总成即可投递（会重命名总成并写入电路）。
+ae2patterngen.msg.delivery.delivered=已投递 %s 个样板；目标共有 %s 个样板槽。
+ae2patterngen.msg.delivery.renamed=已重命名目标为: %s
+ae2patterngen.msg.delivery.circuit_written=已把编程电路 %s 写入总成电路槽。
+ae2patterngen.msg.delivery.circuit_cleared=该规则不要求电路，已清空电路槽。
+ae2patterngen.msg.delivery.nc_bookmarked=已把 %s 个 NC 物品加入 NEI 书签，请摆入总成手动槽。
+ae2patterngen.msg.delivery.no_space=目标的样板槽已满（%s 个槽位）。
+ae2patterngen.msg.delivery.no_patterns=浏览器仓储为空，请先在浏览器里生成样板。
+ae2patterngen.msg.delivery.not_supported=目标不是样板接收方（GT 样板输入总成 / AE2 面板接口）。
+ae2patterngen.msg.delivery.unknown_binding=样板已投递，但规则上下文已丢失（重启过？），未写入名称与电路。

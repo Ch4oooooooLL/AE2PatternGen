@@ -147,6 +147,60 @@ public class RecipeCacheServiceTest {
         assertEquals(120, result.recipes.get(0).duration);
     }
 
+    @Test
+    public void getCachedRecipeMapsSortsByRecipeCountDescending() {
+        RecipeCacheMetadata metadata = new RecipeCacheMetadata();
+        metadata.updateRecipeMapInfo("gt.recipe.metalbender", "gregtech", 12, "hash-a", "a.dat");
+        metadata.updateRecipeMapInfo("gt.recipe.assembler", "gregtech", 40, "hash-b", "b.dat");
+        metadata.updateRecipeMapInfo("gt.recipe.macerator", "gregtech", 12, "hash-c", "c.dat");
+        storage.metadata = metadata;
+
+        List<RecipeCacheMetadata.RecipeMapInfo> maps = RecipeCacheService.getCachedRecipeMaps();
+
+        assertEquals(3, maps.size());
+        assertEquals("gt.recipe.assembler", maps.get(0).mapId);
+        assertEquals("gt.recipe.macerator", maps.get(1).mapId);
+        assertEquals("gt.recipe.metalbender", maps.get(2).mapId);
+    }
+
+    @Test
+    public void getCachedRecipeMapsReturnsEmptyWhenCacheMissing() {
+        assertTrue(
+            RecipeCacheService.getCachedRecipeMaps()
+                .isEmpty());
+    }
+
+    @Test
+    public void loadSingleRecipeMapIgnoresFuzzyKeywordMatches() {
+        collector.availableMapIds = Arrays.asList("gt.recipe.bender", "gt.recipe.bender.alt");
+        collector.matches.put("bender", Arrays.asList("gt.recipe.bender", "gt.recipe.bender.alt"));
+        inspector.modVersions.put("gregtech", "5.0.0");
+        inspector.configHashes.put("config/ae2patterngen.cfg", "cfg-hash");
+        RecipeCacheService.rebuildNow(null);
+
+        assertEquals(2, RecipeCacheService.loadAndFilterRecipes("bender", null).matchedMapIds.size());
+
+        CacheQueryResult exact = RecipeCacheService.loadSingleRecipeMap("gt.recipe.bender");
+
+        assertTrue(exact.cacheValid);
+        assertEquals(1, exact.matchedMapIds.size());
+        assertEquals("gt.recipe.bender", exact.matchedMapIds.get(0));
+        assertEquals(2, exact.recipes.size());
+    }
+
+    @Test
+    public void loadSingleRecipeMapRejectsUnknownMap() {
+        collector.availableMapIds = Collections.singletonList("gt.recipe.bender");
+        inspector.modVersions.put("gregtech", "5.0.0");
+        inspector.configHashes.put("config/ae2patterngen.cfg", "cfg-hash");
+        RecipeCacheService.rebuildNow(null);
+
+        CacheQueryResult result = RecipeCacheService.loadSingleRecipeMap("gt.recipe.missing");
+
+        assertFalse(result.cacheValid);
+        assertEquals("recipe_map_missing", result.failureReason);
+    }
+
     private static RecipeEntry sampleRecipe(int duration) {
         return new RecipeEntry("gt", "gt.recipe.assembler", "Assembler", null, null, null, null, null, duration, 30);
     }

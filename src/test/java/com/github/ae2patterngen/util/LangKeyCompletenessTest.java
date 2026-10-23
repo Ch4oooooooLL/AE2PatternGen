@@ -23,15 +23,18 @@ public class LangKeyCompletenessTest {
 
     private static final List<String> REQUIRED_KEYS = Arrays.asList(
         "item.ae2patterngen.pattern_generator.name",
+        "item.ae2patterngen.recipe_browser.name",
         "ae2patterngen.gui.pattern_gen.title",
         "ae2patterngen.gui.pattern_storage.title",
         "ae2patterngen.gui.pattern_detail.title",
         "ae2patterngen.gui.recipe_picker.title",
+        "ae2patterngen.gui.browser.title",
         "ae2patterngen.msg.storage.empty_extract",
         "ae2patterngen.msg.generate.no_matching_map",
         "ae2patterngen.msg.cache.missing_or_invalid",
         "ae2patterngen.msg.pattern.generated_and_consumed",
         "ae2patterngen.msg.conflict.cancelled",
+        "ae2patterngen.msg.browser.pool_unavailable",
         "ae2patterngen.command.help.title",
         "ae2patterngen.command.list.available_maps",
         "ae2patterngen.tooltip.feature.title",

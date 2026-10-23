@@ -197,3 +197,101 @@ ae2patterngen.msg.pattern.insufficient_blank_pattern=[AE2PatternGen] Generation 
 
 # Message - Common
 ae2patterngen.msg.common.unknown_item=Unknown Item
+
+item.ae2patterngen.recipe_browser.name=Recipe Browser
+
+# Recipe Browser GUI
+ae2patterngen.gui.browser.title=Recipe Browser
+ae2patterngen.gui.browser.breadcrumb.pools=Recipe Pools
+ae2patterngen.gui.browser.breadcrumb.rules=%s / Rules
+ae2patterngen.gui.browser.breadcrumb.recipes=%s / Recipes
+ae2patterngen.gui.browser.breadcrumb.preview=%s / Preview & Filter
+ae2patterngen.gui.browser.breadcrumb.storage=Browser Storage
+ae2patterngen.gui.browser.info.pools=%s of %s pools shown
+ae2patterngen.gui.browser.info.rules=%s recipes, %s rules (hidden: %s single-recipe rules, %s no-rule recipes)
+ae2patterngen.gui.browser.info.recipes=%s of %s recipes shown
+ae2patterngen.gui.browser.info.preview=%s | group %s recipes | matched %s
+ae2patterngen.gui.browser.info.storage=%s pattern(s) | Source: %s
+ae2patterngen.gui.browser.empty.storage=Browser storage is empty. Generate patterns from a rule group first.
+ae2patterngen.gui.browser.empty.pools=No cached recipe pool. Build the cache first.
+ae2patterngen.gui.browser.empty.rules=No rule group to show with the current toggles.
+ae2patterngen.gui.browser.empty.recipes=No recipe in this rule group.
+ae2patterngen.gui.browser.button.back=Back
+ae2patterngen.gui.browser.button.close=Close
+ae2patterngen.gui.browser.button.refresh=Refresh
+ae2patterngen.gui.browser.button.search=Find
+ae2patterngen.gui.browser.button.generate_group=Gen All
+ae2patterngen.gui.browser.button.generate_one=Gen
+ae2patterngen.gui.browser.button.singleton_on=Singles: On
+ae2patterngen.gui.browser.button.singleton_off=Singles: Off
+ae2patterngen.gui.browser.button.unruled_on=No-rule: On
+ae2patterngen.gui.browser.button.unruled_off=No-rule: Off
+ae2patterngen.gui.browser.page=%s / %s
+ae2patterngen.gui.browser.button.generate_matched=Gen %s
+ae2patterngen.gui.browser.button.filter_page=Filter & Gen
+ae2patterngen.gui.browser.button.reset=Reset
+ae2patterngen.gui.browser.button.delete=Delete
+ae2patterngen.gui.browser.button.clear=Clear
+ae2patterngen.gui.browser.button.preview=Preview
+ae2patterngen.gui.browser.column.pool=Recipe pool
+ae2patterngen.gui.browser.column.rule=Rule (circuit / NC)
+ae2patterngen.gui.browser.column.recipe=Output <- Input
+ae2patterngen.gui.browser.column.recipe_count=Recipes
+ae2patterngen.gui.browser.column.action=Action
+ae2patterngen.gui.browser.column.storage_item=Output preview
+ae2patterngen.gui.browser.storage.index=Pattern #%s
+ae2patterngen.gui.browser.storage.deliver_hint=Right click a pattern input hatch to deliver them (renames the hatch and writes the circuit).
+ae2patterngen.gui.browser.count.recipes=%s
+ae2patterngen.gui.browser.hint.open_rules=Click to open its rule groups
+ae2patterngen.gui.browser.hint.open_preview=Left click the row for details, or press Gen All for preview
+ae2patterngen.gui.browser.filter.output=Output:
+ae2patterngen.gui.browser.filter.input=Input:
+ae2patterngen.gui.browser.filter.nc=NC:
+ae2patterngen.gui.browser.filter.exclude_in=Exclude In:
+ae2patterngen.gui.browser.filter.exclude_out=Exclude Out:
+ae2patterngen.gui.browser.filter.tier=Tier:
+ae2patterngen.gui.browser.filter.syntax=[id] / (ore) / {name}
+ae2patterngen.gui.browser.preview.inputs=Inputs
+ae2patterngen.gui.browser.preview.outputs=Outputs
+ae2patterngen.gui.browser.preview.section=%s (%s kinds)
+ae2patterngen.gui.browser.preview.more=+%s
+ae2patterngen.gui.browser.preview.not_loaded=Press Preview to list the inputs and outputs of the current filter.
+ae2patterngen.gui.browser.rule.no_circuit=No circuit
+ae2patterngen.gui.browser.rule.circuit=Circuit %s
+ae2patterngen.gui.browser.rule.nc_count=NC x%s
+ae2patterngen.gui.browser.rule.unruled=No circuit / no NC
+ae2patterngen.gui.browser.no_input=No item input
+ae2patterngen.gui.browser.unknown_item=Unknown Item
+ae2patterngen.gui.browser.tooltip.pool=Map: %s | Mod: %s
+ae2patterngen.gui.browser.tooltip.circuit=Programmed circuit: %s
+ae2patterngen.gui.browser.tooltip.nc=Non-consumed items: %s
+ae2patterngen.gui.browser.tooltip.outputs=Sample outputs: %s
+ae2patterngen.gui.browser.tooltip.duration=Duration: %s ticks | %s EU/t
+
+# Message - Recipe Browser
+ae2patterngen.msg.browser.pool_unavailable=[AE2PatternGen] Recipe pool unavailable. Rebuild the recipe cache if needed.
+ae2patterngen.msg.browser.rule_unavailable=[AE2PatternGen] This rule group no longer exists. Refresh the list.
+ae2patterngen.msg.browser.internal_error=[AE2PatternGen] Recipe browser request failed. Check the server log for details.
+ae2patterngen.msg.browser.storage_missing_index=[AE2PatternGen] That pattern no longer exists. Refresh the list.
+ae2patterngen.msg.browser.storage_cleared=[AE2PatternGen] Browser storage cleared.
+
+# Tooltip - Recipe Browser
+ae2patterngen.tooltip.browser.title=Recipe Browser
+ae2patterngen.tooltip.browser.line1=Right click to browse cached recipes by recipe pool.
+ae2patterngen.tooltip.browser.line2=Groups are keyed by programmed circuit and non-consumed items.
+ae2patterngen.tooltip.browser.line3=Generate a whole rule group or a single recipe.
+ae2patterngen.tooltip.browser.line4=Sneak-right-click air to open this browser's storage; right click a pattern input hatch to deliver.
+
+# Recipe Browser - delivery to the pattern input hatch
+ae2patterngen.delivery.name.circuit=Circuit %s
+ae2patterngen.delivery.name.no_circuit=NoCircuit
+ae2patterngen.msg.browser.deliver_hint=Right click a pattern input hatch to deliver (it renames the hatch and writes the circuit).
+ae2patterngen.msg.delivery.delivered=Delivered %s pattern(s); the target has %s pattern slots.
+ae2patterngen.msg.delivery.renamed=Target renamed to: %s
+ae2patterngen.msg.delivery.circuit_written=Programmed circuit %s written into the hatch.
+ae2patterngen.msg.delivery.circuit_cleared=This rule needs no circuit; the circuit slot was cleared.
+ae2patterngen.msg.delivery.nc_bookmarked=%s non-consumed item(s) added to the NEI bookmarks; put them into the manual slots.
+ae2patterngen.msg.delivery.no_space=Target pattern slots are full (%s slots).
+ae2patterngen.msg.delivery.no_patterns=Browser storage is empty. Generate patterns first.
+ae2patterngen.msg.delivery.not_supported=Target is not a pattern receiver (GT pattern input hatch / AE2 interface).
+ae2patterngen.msg.delivery.unknown_binding=Patterns delivered, but the rule context is gone (restart?); name and circuit were not written.

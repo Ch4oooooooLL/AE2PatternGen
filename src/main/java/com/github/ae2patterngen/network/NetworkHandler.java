@@ -57,6 +57,11 @@ public class NetworkHandler {
             PacketResolveConflictsBatch.class,
             packetId++,
             Side.SERVER);
+
+        INSTANCE.registerMessage(PacketBrowseRequest.Handler.class, PacketBrowseRequest.class, packetId++, Side.SERVER);
+        INSTANCE
+            .registerMessage(PacketBrowseResponse.Handler.class, PacketBrowseResponse.class, packetId++, Side.CLIENT);
+        INSTANCE.registerMessage(PacketNeiBookmarks.Handler.class, PacketNeiBookmarks.class, packetId++, Side.CLIENT);
     }
 
     public static void sendToServer(PacketGeneratePatterns packet) {

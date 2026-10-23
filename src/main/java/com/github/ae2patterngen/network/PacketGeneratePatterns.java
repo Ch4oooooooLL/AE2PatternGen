@@ -15,7 +15,6 @@ import com.github.ae2patterngen.storage.CacheQueryResult;
 import com.github.ae2patterngen.storage.PatternStorage;
 import com.github.ae2patterngen.storage.RecipeCacheService;
 import com.github.ae2patterngen.util.I18nUtil;
-import com.github.ae2patterngen.util.ItemStackUtil;
 
 import cpw.mods.fml.common.network.ByteBufUtils;
 import cpw.mods.fml.common.network.simpleimpl.IMessage;
@@ -158,73 +157,35 @@ public class PacketGeneratePatterns implements IMessage {
                 OreDictReplacer replacer = new OreDictReplacer(
                     com.github.ae2patterngen.config.ReplacementConfig.getRulesString());
                 if (replacer.hasRules()) {
-                    List<RecipeEntry> replaced = new java.util.ArrayList<>();
-                    for (RecipeEntry recipe : filtered) {
-                        replaced.add(
-                            new RecipeEntry(
-                                recipe.sourceType,
-                                recipe.recipeMapId,
-                                recipe.machineDisplayName,
-                                replacer.apply(recipe.inputs),
-                                replacer.apply(recipe.outputs),
-                                recipe.fluidInputs,
-                                recipe.fluidOutputs,
-                                recipe.specialItems,
-                                recipe.duration,
-                                recipe.euPerTick));
-                    }
-                    filtered = replaced;
+                    filtered = RecipeSubmissionSupport.applyReplacements(filtered);
                     send(player, EnumChatFormatting.GRAY, "ae2patterngen.msg.generate.replacement_applied");
                 }
 
-                // [新增] 配方冲突检测与分组 (按产物显示名称)
-                java.util.Map<String, List<RecipeEntry>> groups = new java.util.LinkedHashMap<>();
-                for (RecipeEntry re : filtered) {
-                    String key = I18nUtil.tr("ae2patterngen.msg.common.unknown_item");
-                    if (re.outputs != null && re.outputs.length > 0 && re.outputs[0] != null) {
-                        key = ItemStackUtil.getSafeDisplayName(re.outputs[0]);
-                    } else if (re.fluidOutputs != null && re.fluidOutputs.length > 0 && re.fluidOutputs[0] != null) {
-                        key = re.fluidOutputs[0].getLocalizedName();
-                    }
-                    groups.computeIfAbsent(key, k -> new java.util.ArrayList<>())
-                        .add(re);
-                }
-
-                List<RecipeEntry> nonConflicts = new java.util.ArrayList<>();
-                java.util.Map<String, List<RecipeEntry>> conflicts = new java.util.LinkedHashMap<>();
-                for (java.util.Map.Entry<String, List<RecipeEntry>> entry : groups.entrySet()) {
-                    if (entry.getValue()
-                        .size() > 1) {
-                        conflicts.put(entry.getKey(), entry.getValue());
-                    } else {
-                        nonConflicts.addAll(entry.getValue());
-                    }
-                }
-
-                if (!conflicts.isEmpty()) {
-                    if (ConflictSelectionPolicy.shouldAbortInteractiveSelection(filtered.size(), conflicts.size())) {
+                // 6. 配方冲突检测与分组 (按产物显示名称)
+                RecipeSubmissionSupport.Conflicts conflicts = RecipeSubmissionSupport.classifyConflicts(filtered);
+                if (conflicts.hasConflicts()) {
+                    int conflictGroupCount = conflicts.conflictGroups.size();
+                    if (ConflictSelectionPolicy.shouldAbortInteractiveSelection(filtered.size(), conflictGroupCount)) {
                         send(
                             player,
                             EnumChatFormatting.RED,
                             "ae2patterngen.msg.generate.conflicts_too_large",
                             filtered.size(),
-                            conflicts.size(),
+                            conflictGroupCount,
                             ConflictSelectionPolicy.getMaxInteractiveFilteredRecipes(),
                             ConflictSelectionPolicy.getMaxInteractiveConflictGroups());
                         return null;
                     }
 
                     // 开启冲突处理会话
-                    ConflictSession.start(uuid, message.recipeMapId, nonConflicts, conflicts);
+                    ConflictSession
+                        .start(uuid, message.recipeMapId, conflicts.nonConflicting, conflicts.conflictGroups);
                     send(
                         player,
                         EnumChatFormatting.YELLOW,
                         "ae2patterngen.msg.generate.conflicts_detected",
-                        conflicts.size());
-
-                    // 发送第一个冲突给客户端
-                    ConflictSession session = ConflictSession.get(uuid);
-                    ConflictResolutionService.sendCurrentBatch(player, session);
+                        conflictGroupCount);
+                    ConflictResolutionService.sendCurrentBatch(player, ConflictSession.get(uuid));
                     return null;
                 }
 

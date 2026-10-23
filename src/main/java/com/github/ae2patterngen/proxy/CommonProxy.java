@@ -53,6 +53,28 @@ public class CommonProxy {
                 cpw.mods.fml.common.registry.GameRegistry.findItem("appliedenergistics2", "item.ItemMultiPart"),
                 1,
                 340));
+
+        // 配方浏览器：与样板生成器同级材料，但配方更轻，便于前期就能查配方。
+        cpw.mods.fml.common.registry.GameRegistry.addShapedRecipe(
+            new net.minecraft.item.ItemStack(ModItems.itemRecipeBrowser),
+            "BAB",
+            "ACA",
+            "BAB",
+            'A',
+            new net.minecraft.item.ItemStack(
+                cpw.mods.fml.common.registry.GameRegistry.findItem("gregtech", "gt.metaitem.01"),
+                1,
+                32653),
+            'B',
+            new net.minecraft.item.ItemStack(
+                cpw.mods.fml.common.registry.GameRegistry.findItem("appliedenergistics2", "item.ItemMultiMaterial"),
+                1,
+                52),
+            'C',
+            new net.minecraft.item.ItemStack(
+                cpw.mods.fml.common.registry.GameRegistry.findItem("appliedenergistics2", "item.ItemMultiPart"),
+                1,
+                340));
     }
 
     public void closeCurrentScreen() {

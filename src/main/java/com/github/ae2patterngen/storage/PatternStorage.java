@@ -23,20 +23,46 @@ import com.github.ae2patterngen.config.ForgeConfig;
  * <p>
  * 存储路径: {@code <世界存档>/<配置目录名>/<玩家UUID>.dat}
  * <p>
- * 文件格式: GZip 压缩的 NBT，包含样板列表和元数据。
+ * 文件格式: GZip 压缩的 NBT，按"来源通道"分桶：
+ * <ul>
+ * <li>默认通道沿用旧格式的顶层键（{@code Patterns/Count/Source/Timestamp}），旧存档无需迁移；</li>
+ * <li>其它通道放在 {@code Channels/<通道名>/} 下，例如配方浏览器生成的样板。</li>
+ * </ul>
+ * 分桶的目的是让"按过滤条件生成"与"配方浏览器生成"互不阻塞、互不覆盖，各自在自己的仓储界面里管理。
  */
 public class PatternStorage {
+
+    /** 默认通道：样板生成器（也是历史数据所在通道）。 */
+    public static final String CHANNEL_DEFAULT = "";
+    /** 配方浏览器通道。 */
+    public static final String CHANNEL_BROWSER = "browser";
 
     // NBT 键名
     private static final String KEY_PATTERNS = "Patterns";
     private static final String KEY_COUNT = "Count";
     private static final String KEY_SOURCE = "Source";
     private static final String KEY_TIMESTAMP = "Timestamp";
+    private static final String KEY_CHANNELS = "Channels";
+
+    private static volatile StorageDirectoryResolver directoryResolver = new StorageDirectoryResolver() {
+
+        @Override
+        public File getWorldSaveRoot() {
+            return DimensionManager.getCurrentSaveRootDirectory();
+        }
+    };
 
     /**
-     * 保存样板列表到文件
+     * 保存样板列表到默认通道
      */
     public static boolean save(UUID playerUUID, List<ItemStack> patterns, String source) {
+        return save(playerUUID, patterns, source, CHANNEL_DEFAULT);
+    }
+
+    /**
+     * 保存样板列表到指定通道（只覆盖该通道，其它通道原样保留）
+     */
+    public static boolean save(UUID playerUUID, List<ItemStack> patterns, String source, String channel) {
         File tmpFile = null;
         try {
             File file = getStorageFile(playerUUID);
@@ -47,20 +73,28 @@ public class PatternStorage {
                 return false;
             }
 
-            NBTTagCompound root = new NBTTagCompound();
-            NBTTagList list = new NBTTagList();
+            NBTTagCompound root = readRoot(file);
+            NBTTagCompound bucket = bucketOf(root, channel, true);
 
-            for (ItemStack stack : patterns) {
-                if (stack == null) continue;
-                NBTTagCompound tag = new NBTTagCompound();
-                stack.writeToNBT(tag);
-                list.appendTag(tag);
+            NBTTagList list = new NBTTagList();
+            if (patterns != null) {
+                for (ItemStack stack : patterns) {
+                    if (stack == null) continue;
+                    NBTTagCompound tag = new NBTTagCompound();
+                    stack.writeToNBT(tag);
+                    list.appendTag(tag);
+                }
             }
 
-            root.setTag(KEY_PATTERNS, list);
-            root.setInteger(KEY_COUNT, list.tagCount());
-            root.setString(KEY_SOURCE, source != null ? source : "");
-            root.setLong(KEY_TIMESTAMP, System.currentTimeMillis());
+            bucket.setTag(KEY_PATTERNS, list);
+            bucket.setInteger(KEY_COUNT, list.tagCount());
+            bucket.setString(KEY_SOURCE, source != null ? source : "");
+            bucket.setLong(KEY_TIMESTAMP, System.currentTimeMillis());
+
+            if (isEmptyBuckets(root)) {
+                file.delete();
+                return true;
+            }
 
             tmpFile = new File(file.getParentFile(), file.getName() + ".tmp");
             try (FileOutputStream fos = new FileOutputStream(tmpFile)) {
@@ -87,10 +121,17 @@ public class PatternStorage {
     }
 
     /**
-     * 从文件加载全部样板
+     * 从默认通道加载全部样板
      */
     public static List<ItemStack> load(UUID playerUUID) {
-        List<ItemStack> patterns = new ArrayList<>();
+        return load(playerUUID, CHANNEL_DEFAULT);
+    }
+
+    /**
+     * 从指定通道加载全部样板
+     */
+    public static List<ItemStack> load(UUID playerUUID, String channel) {
+        List<ItemStack> patterns = new ArrayList<ItemStack>();
         try {
             File file = getStorageFile(playerUUID);
             if (!file.exists()) return patterns;
@@ -99,8 +140,13 @@ public class PatternStorage {
             try (FileInputStream fis = new FileInputStream(file)) {
                 root = CompressedStreamTools.readCompressed(fis);
             }
-            String source = root.getString(KEY_SOURCE);
-            NBTTagList list = root.getTagList(KEY_PATTERNS, 10); // 10 = NBTTagCompound
+            NBTTagCompound bucket = bucketOf(root, channel, false);
+            if (bucket == null) {
+                return patterns;
+            }
+
+            String source = bucket.getString(KEY_SOURCE);
+            NBTTagList list = bucket.getTagList(KEY_PATTERNS, 10); // 10 = NBTTagCompound
             boolean repaired = false;
 
             for (int i = 0; i < list.tagCount(); i++) {
@@ -119,7 +165,7 @@ public class PatternStorage {
 
             // 自动修复历史坏样板（负数/1L/Cnt-Count 不一致）并回写
             if (repaired) {
-                save(playerUUID, patterns, source);
+                save(playerUUID, patterns, source, channel);
             }
         } catch (Exception e) {
             System.err.println("[AE2PatternGen] Failed to load pattern storage: " + e.getMessage());
@@ -128,9 +174,16 @@ public class PatternStorage {
     }
 
     /**
-     * 获取存储摘要 (不加载全部数据)
+     * 获取默认通道的存储摘要 (不加载全部数据)
      */
     public static StorageSummary getSummary(UUID playerUUID) {
+        return getSummary(playerUUID, CHANNEL_DEFAULT);
+    }
+
+    /**
+     * 获取指定通道的存储摘要 (不加载全部数据)
+     */
+    public static StorageSummary getSummary(UUID playerUUID, String channel) {
         try {
             File file = getStorageFile(playerUUID);
             if (!file.exists()) return StorageSummary.EMPTY;
@@ -139,17 +192,21 @@ public class PatternStorage {
             try (FileInputStream fis = new FileInputStream(file)) {
                 root = CompressedStreamTools.readCompressed(fis);
             }
-            int count = root.getInteger(KEY_COUNT);
-            String source = root.getString(KEY_SOURCE);
-            long timestamp = root.getLong(KEY_TIMESTAMP);
+            NBTTagCompound bucket = bucketOf(root, channel, false);
+            if (bucket == null) {
+                return StorageSummary.EMPTY;
+            }
+
+            int count = bucket.getInteger(KEY_COUNT);
+            String source = bucket.getString(KEY_SOURCE);
+            long timestamp = bucket.getLong(KEY_TIMESTAMP);
 
             if (count == 0) return StorageSummary.EMPTY;
 
             // 加载前几条作为预览 (解析产物名)
-            List<String> previews = new ArrayList<>();
-            NBTTagList list = root.getTagList(KEY_PATTERNS, 10);
-            int previewCount = list.tagCount();
-            for (int i = 0; i < previewCount; i++) {
+            List<String> previews = new ArrayList<String>();
+            NBTTagList list = bucket.getTagList(KEY_PATTERNS, 10);
+            for (int i = 0; i < list.tagCount(); i++) {
                 ItemStack stack = ItemStack.loadItemStackFromNBT(list.getCompoundTagAt(i));
                 if (stack != null) {
                     previews.add(extractOutputSummary(stack));
@@ -164,31 +221,75 @@ public class PatternStorage {
     }
 
     /**
-     * 检查存储是否为空
+     * 检查默认通道是否为空
      */
     public static boolean isEmpty(UUID playerUUID) {
-        File file = getStorageFile(playerUUID);
-        return !file.exists() || file.length() == 0 || getSummary(playerUUID).count == 0;
+        return isEmpty(playerUUID, CHANNEL_DEFAULT);
     }
 
     /**
-     * 清空存储
+     * 检查指定通道是否为空
+     */
+    public static boolean isEmpty(UUID playerUUID, String channel) {
+        return getSummary(playerUUID, channel).count == 0;
+    }
+
+    /**
+     * 清空默认通道
      */
     public static void clear(UUID playerUUID) {
-        File file = getStorageFile(playerUUID);
-        if (file.exists()) {
-            file.delete();
+        clear(playerUUID, CHANNEL_DEFAULT);
+    }
+
+    /**
+     * 清空指定通道（其它通道保留；全部为空时删除文件）
+     */
+    public static void clear(UUID playerUUID, String channel) {
+        try {
+            File file = getStorageFile(playerUUID);
+            if (!file.exists()) return;
+
+            NBTTagCompound root;
+            try (FileInputStream fis = new FileInputStream(file)) {
+                root = CompressedStreamTools.readCompressed(fis);
+            }
+
+            if (CHANNEL_DEFAULT.equals(normalizeChannel(channel))) {
+                root.removeTag(KEY_PATTERNS);
+                root.removeTag(KEY_COUNT);
+                root.removeTag(KEY_SOURCE);
+                root.removeTag(KEY_TIMESTAMP);
+            } else {
+                NBTTagCompound channels = root.getCompoundTag(KEY_CHANNELS);
+                channels.removeTag(normalizeChannel(channel));
+                if (channels.hasNoTags()) {
+                    root.removeTag(KEY_CHANNELS);
+                }
+            }
+
+            if (isEmptyBuckets(root)) {
+                file.delete();
+                return;
+            }
+
+            try (FileOutputStream fos = new FileOutputStream(file)) {
+                CompressedStreamTools.writeCompressed(root, fos);
+            }
+        } catch (Exception e) {
+            System.err.println("[AE2PatternGen] Failed to clear pattern storage: " + e.getMessage());
         }
     }
 
     /**
-     * 从存储中取出指定数量的样板，更新文件
-     *
-     * @return 实际取出的样板列表
+     * 从指定通道取出指定数量的样板并更新文件
      */
     public static List<ItemStack> extract(UUID playerUUID, int maxCount) {
-        List<ItemStack> all = load(playerUUID);
-        List<ItemStack> extracted = new ArrayList<>();
+        return extract(playerUUID, maxCount, CHANNEL_DEFAULT);
+    }
+
+    public static List<ItemStack> extract(UUID playerUUID, int maxCount, String channel) {
+        List<ItemStack> all = load(playerUUID, channel);
+        List<ItemStack> extracted = new ArrayList<ItemStack>();
 
         int toExtract = Math.min(maxCount, all.size());
         for (int i = 0; i < toExtract; i++) {
@@ -196,11 +297,10 @@ public class PatternStorage {
         }
 
         if (all.isEmpty()) {
-            clear(playerUUID);
+            clear(playerUUID, channel);
         } else {
-            // 重新保存剩余的
-            StorageSummary summary = getSummary(playerUUID);
-            if (!save(playerUUID, all, summary.source)) {
+            StorageSummary summary = getSummary(playerUUID, channel);
+            if (!save(playerUUID, all, summary.source, channel)) {
                 System.err.println("[AE2PatternGen] Failed to persist remaining patterns after extract.");
             }
         }
@@ -209,21 +309,23 @@ public class PatternStorage {
     }
 
     /**
-     * 删除存储中指定索引的样板
-     *
-     * @return 被删除的样板，或 null（索引越界）
+     * 删除指定通道中指定索引的样板
      */
     public static ItemStack delete(UUID playerUUID, int index) {
-        List<ItemStack> all = load(playerUUID);
+        return delete(playerUUID, index, CHANNEL_DEFAULT);
+    }
+
+    public static ItemStack delete(UUID playerUUID, int index, String channel) {
+        List<ItemStack> all = load(playerUUID, channel);
         if (index < 0 || index >= all.size()) return null;
 
         ItemStack removed = all.remove(index);
 
         if (all.isEmpty()) {
-            clear(playerUUID);
+            clear(playerUUID, channel);
         } else {
-            StorageSummary summary = getSummary(playerUUID);
-            if (!save(playerUUID, all, summary.source)) {
+            StorageSummary summary = getSummary(playerUUID, channel);
+            if (!save(playerUUID, all, summary.source, channel)) {
                 System.err.println("[AE2PatternGen] Failed to persist remaining patterns after delete.");
             }
         }
@@ -232,13 +334,13 @@ public class PatternStorage {
     }
 
     /**
-     * 获取指定页的样板摘要预览
-     *
-     * @param page     页码 (0-indexed)
-     * @param pageSize 每页数量
-     * @return 该页的 StorageSummary（previews 仅包含该页的样板名称）
+     * 获取指定通道、指定页的样板摘要预览
      */
     public static StorageSummary getPage(UUID playerUUID, int page, int pageSize) {
+        return getPage(playerUUID, page, pageSize, CHANNEL_DEFAULT);
+    }
+
+    public static StorageSummary getPage(UUID playerUUID, int page, int pageSize, String channel) {
         try {
             File file = getStorageFile(playerUUID);
             if (!file.exists()) return StorageSummary.EMPTY;
@@ -247,17 +349,22 @@ public class PatternStorage {
             try (FileInputStream fis = new FileInputStream(file)) {
                 root = CompressedStreamTools.readCompressed(fis);
             }
-            int count = root.getInteger(KEY_COUNT);
-            String source = root.getString(KEY_SOURCE);
-            long timestamp = root.getLong(KEY_TIMESTAMP);
+            NBTTagCompound bucket = bucketOf(root, channel, false);
+            if (bucket == null) {
+                return StorageSummary.EMPTY;
+            }
+
+            int count = bucket.getInteger(KEY_COUNT);
+            String source = bucket.getString(KEY_SOURCE);
+            long timestamp = bucket.getLong(KEY_TIMESTAMP);
 
             if (count == 0) return StorageSummary.EMPTY;
 
-            NBTTagList list = root.getTagList(KEY_PATTERNS, 10);
-            int start = page * pageSize;
+            NBTTagList list = bucket.getTagList(KEY_PATTERNS, 10);
+            int start = Math.max(0, page * pageSize);
             int end = Math.min(start + pageSize, list.tagCount());
 
-            List<String> previews = new ArrayList<>();
+            List<String> previews = new ArrayList<String>();
             for (int i = start; i < end; i++) {
                 ItemStack stack = ItemStack.loadItemStackFromNBT(list.getCompoundTagAt(i));
                 if (stack != null) {
@@ -273,15 +380,19 @@ public class PatternStorage {
     }
 
     /**
-     * 获取指定索引的样板详情 (输入/输出物品名列表)
+     * 获取指定通道中指定索引的样板详情 (输入/输出物品名列表)
      */
     public static PatternDetail getPatternDetail(UUID playerUUID, int index) {
-        List<ItemStack> all = load(playerUUID);
+        return getPatternDetail(playerUUID, index, CHANNEL_DEFAULT);
+    }
+
+    public static PatternDetail getPatternDetail(UUID playerUUID, int index, String channel) {
+        List<ItemStack> all = load(playerUUID, channel);
         if (index < 0 || index >= all.size()) return null;
 
         ItemStack pattern = all.get(index);
-        List<String> inputs = new ArrayList<>();
-        List<String> outputs = new ArrayList<>();
+        List<String> inputs = new ArrayList<String>();
+        List<String> outputs = new ArrayList<String>();
 
         if (pattern.hasTagCompound()) {
             NBTTagCompound tag = pattern.getTagCompound();
@@ -290,15 +401,7 @@ public class PatternStorage {
             for (int i = 0; i < inList.tagCount(); i++) {
                 ItemStack item = ItemStack.loadItemStackFromNBT(inList.getCompoundTagAt(i));
                 if (item != null) {
-                    long cnt = inList.getCompoundTagAt(i)
-                        .hasKey("Cnt")
-                            ? inList.getCompoundTagAt(i)
-                                .getLong("Cnt")
-                            : item.stackSize;
-                    if (cnt <= 0) {
-                        cnt = 1;
-                    }
-                    inputs.add(item.getDisplayName() + " x" + cnt);
+                    inputs.add(item.getDisplayName() + " x" + countOf(inList.getCompoundTagAt(i), item));
                 }
             }
 
@@ -306,20 +409,17 @@ public class PatternStorage {
             for (int i = 0; i < outList.tagCount(); i++) {
                 ItemStack item = ItemStack.loadItemStackFromNBT(outList.getCompoundTagAt(i));
                 if (item != null) {
-                    long cnt = outList.getCompoundTagAt(i)
-                        .hasKey("Cnt")
-                            ? outList.getCompoundTagAt(i)
-                                .getLong("Cnt")
-                            : item.stackSize;
-                    if (cnt <= 0) {
-                        cnt = 1;
-                    }
-                    outputs.add(item.getDisplayName() + " x" + cnt);
+                    outputs.add(item.getDisplayName() + " x" + countOf(outList.getCompoundTagAt(i), item));
                 }
             }
         }
 
         return new PatternDetail(inputs, outputs);
+    }
+
+    private static long countOf(NBTTagCompound itemTag, ItemStack item) {
+        long count = itemTag.hasKey("Cnt") ? itemTag.getLong("Cnt") : item.stackSize;
+        return count <= 0 ? 1 : count;
     }
 
     /**
@@ -342,14 +442,7 @@ public class PatternStorage {
             ItemStack item = ItemStack.loadItemStackFromNBT(outList.getCompoundTagAt(i));
             if (item != null) {
                 if (sb.length() > 0) sb.append(", ");
-                long cnt = outList.getCompoundTagAt(i)
-                    .hasKey("Cnt")
-                        ? outList.getCompoundTagAt(i)
-                            .getLong("Cnt")
-                        : item.stackSize;
-                if (cnt <= 0) {
-                    cnt = 1;
-                }
+                long cnt = countOf(outList.getCompoundTagAt(i), item);
                 sb.append(item.getDisplayName());
                 if (cnt > 1) sb.append(" x")
                     .append(cnt);
@@ -404,11 +497,77 @@ public class PatternStorage {
         return value > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) value;
     }
 
+    /** 通道名为空即默认通道（旧格式的顶层键）。 */
+    private static String normalizeChannel(String channel) {
+        return channel != null ? channel : CHANNEL_DEFAULT;
+    }
+
+    private static NBTTagCompound bucketOf(NBTTagCompound root, String channel, boolean create) {
+        if (root == null) {
+            return null;
+        }
+        String key = normalizeChannel(channel);
+        if (CHANNEL_DEFAULT.equals(key)) {
+            return root;
+        }
+
+        NBTTagCompound channels = root.getCompoundTag(KEY_CHANNELS);
+        if (!channels.hasKey(key)) {
+            if (!create) {
+                return null;
+            }
+            channels.setTag(key, new NBTTagCompound());
+            root.setTag(KEY_CHANNELS, channels);
+        }
+        return channels.getCompoundTag(key);
+    }
+
+    /** 文件里是否还有任何通道存在（含空列表的通道）。 */
+    private static boolean isEmptyBuckets(NBTTagCompound root) {
+        if (root.hasKey(KEY_PATTERNS)) {
+            return false;
+        }
+        return root.getCompoundTag(KEY_CHANNELS)
+            .hasNoTags();
+    }
+
+    private static NBTTagCompound readRoot(File file) {
+        if (!file.exists()) {
+            return new NBTTagCompound();
+        }
+        try (FileInputStream fis = new FileInputStream(file)) {
+            NBTTagCompound root = CompressedStreamTools.readCompressed(fis);
+            return root != null ? root : new NBTTagCompound();
+        } catch (Exception e) {
+            return new NBTTagCompound();
+        }
+    }
+
     private static File getStorageFile(UUID playerUUID) {
-        File worldDir = DimensionManager.getCurrentSaveRootDirectory();
+        File worldDir = directoryResolver.getWorldSaveRoot();
         String dirName = ForgeConfig.getStorageDirectoryName();
-        File storageDir = new File(worldDir, dirName);
+        File storageDir = worldDir != null ? new File(worldDir, dirName) : new File(dirName);
         return new File(storageDir, playerUUID.toString() + ".dat");
+    }
+
+    static void setDirectoryResolver(StorageDirectoryResolver resolver) {
+        directoryResolver = resolver != null ? resolver : directoryResolver;
+    }
+
+    static void resetDirectoryResolver() {
+        directoryResolver = new StorageDirectoryResolver() {
+
+            @Override
+            public File getWorldSaveRoot() {
+                return DimensionManager.getCurrentSaveRootDirectory();
+            }
+        };
+    }
+
+    /** 世界存档根目录解析钩子（单元测试注入临时目录）。 */
+    interface StorageDirectoryResolver {
+
+        File getWorldSaveRoot();
     }
 
     /**
